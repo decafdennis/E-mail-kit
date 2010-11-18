@@ -380,11 +380,13 @@ class EmailkitListSubscriber {
   /**
    * Load the subscriber associated with the given user ID from the database.
    *
+   * @param $uid A user ID, which must be strictly positive.
+   *
    * @return A subscriber, or NULL if it cannot be found.
    */
   public static function loadWithUserId($uid) {
-    if (!is_numeric($uid)) {
-      trigger_error(sprintf("User identifier must be a number: %d", $uid), E_USER_ERROR);
+    if (!is_numeric($uid) || $uid <= 0) {
+      trigger_error(sprintf("User identifier must be a strictly positive number: %d", $uid), E_USER_ERROR);
       return;
     }
 
