@@ -201,8 +201,8 @@ function theme_emailkit_list_admin_list_form($form) {
   foreach (element_children($form['lists']) as $lid) {
     $row = array();
     $row[] = check_plain($form['lists'][$lid]['#list']->getName());
-    $row[] = l(t('edit'), 'admin/emailkit/list/lists/' . $lid . '/edit');
-    $row[] = l(t('delete'), 'admin/emailkit/list/lists/' . $lid . '/delete');
+    $row[] = l(t('edit'), 'admin/emailkit/list/lists/' . $lid . '/edit', array('query' => drupal_get_destination()));
+    $row[] = l(t('delete'), 'admin/emailkit/list/lists/' . $lid . '/delete', array('query' => drupal_get_destination()));
     
     // Do we have a weight field?
     if (isset($form['lists'][$lid]['weight'])) {
