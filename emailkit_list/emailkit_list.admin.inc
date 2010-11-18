@@ -266,8 +266,22 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
  * Handles validating of a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
-  if (!empty($form_state['values']['address']) && !valid_email_address($form_state['values']['address'])) {
-    form_set_error('address', t('E-mail address is invalid.'));
+  if (!empty($form_state['values']['address'])) {
+    $address = $form_state['values']['address'];
+    
+    // Check whether it is a valid address
+    if (!valid_email_address($address)) {
+      form_set_error('address', t('E-mail address is invalid.'));
+    }
+    else {
+      module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
+      
+      // Check whether the e-mail address is already associated with a different subscriber
+      $address_subscriber = EmailkitListSubscriber::loadWithAddress($address);
+      if ($address_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->getId() == $address_subscriber->getId())) {
+        form_set_error('address', t('The e-mail address %address is already associated with another subscriber.', array('%address' => $address)));
+      }
+    }
   }
   
   // TODO: Check duplicate e-mail addresses

@@ -356,6 +356,28 @@ class EmailkitListSubscriber {
   }
   
   /**
+   * Load the subscriber associated with the given e-mail address from the database.
+   *
+   * @param $address A non-empty string.
+   *
+   * @return A subscriber, or NULL if it cannot be found.
+   */
+  public static function loadWithAddress($address) {
+    if (!is_string($address) || empty($address)) {
+      trigger_error(sprintf("E-mail address must be a non-empty string: %s", $address), E_USER_ERROR);
+      return;
+    }
+
+    $result = db_query("SELECT * FROM {emailkit_list_subscriber} WHERE address = '%s'", $address);
+    if ($record = db_fetch_object($result)) {
+      return EmailkitListSubscriber::subscriberWithRecord($record);
+    }
+    else {
+      return NULL;
+    }
+  }
+  
+  /**
    * Load the subscriber associated with the given user ID from the database.
    *
    * @return A subscriber, or NULL if it cannot be found.
