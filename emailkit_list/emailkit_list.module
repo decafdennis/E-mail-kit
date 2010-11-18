@@ -10,6 +10,9 @@ function emailkit_list_perm() {
   // Permission for adding, editing and deleting e-mail lists
   $perm[] = 'administer e-mail lists';
   
+  // Permissions for adding, editing and deleting subscribers
+  $perm[] = 'administer subscribers';
+  
   return $perm;
 }
 
@@ -18,6 +21,8 @@ function emailkit_list_perm() {
  */
 function emailkit_list_menu() {
   $items = array();
+  
+  // TODO: Add callback for admin/emailkit/list
 
   // Menu items for adding, editing and deleting e-mail lists
   $items['admin/emailkit/list/lists'] = array(
@@ -55,6 +60,42 @@ function emailkit_list_menu() {
     'type' => MENU_CALLBACK,
   );
   
+  // Menu items for adding, editing and deleting subscribers
+  $items['admin/emailkit/list/subscribers'] = array(
+    'title' => 'Subscribers',
+    'page callback' => 'emailkit_list_admin_subscriber_list',
+    'access arguments' => array('administer subscribers'),
+    'file' => 'emailkit_list.admin.inc',
+  );
+  $items['admin/emailkit/list/subscribers/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/emailkit/list/subscribers/add'] = array(
+    'title' => 'Add subscriber',
+    'page callback' => 'emailkit_list_admin_subscriber_add',
+    'access arguments' => array('administer subscribers'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/emailkit/list/subscribers/%emailkit_list_subscriber/edit'] = array(
+    'title' => 'Edit subscriber',
+    'page callback' => 'emailkit_list_admin_subscriber_edit',
+    'page arguments' => array(4),
+    'access arguments' => array('administer subscribers'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/emailkit/list/subscribers/%emailkit_list_subscriber/delete'] = array(
+    'title' => 'Delete subscriber',
+    'page callback' => 'emailkit_list_admin_subscriber_delete',
+    'page arguments' => array(4),
+    'access arguments' => array('administer subscribers'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  
   return $items;
 }
 
@@ -73,6 +114,20 @@ function emailkit_list_load($lid) {
 }
 
 /**
+ * Function used as a page argument callback for the menu items for editing and deleting subscribers.
+ */
+function emailkit_list_subscriber_load($sid) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
+  
+  if (is_numeric($sid)) {
+    return EmailkitListSubscriber::loadWithId($sid);
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
  * Implementation of hook_theme().
  */
 function emailkit_list_theme() {
@@ -80,6 +135,14 @@ function emailkit_list_theme() {
   
   // Theming for the e-mail lists admin form
   $theme['emailkit_list_admin_list_form'] = array(
+    'arguments' => array(
+      'form' => array(),
+    ),
+    'file' => 'emailkit_list.admin.inc',
+  );
+  
+  // Theming for the subscribers admin form
+  $theme['emailkit_list_admin_subscriber_list_form'] = array(
     'arguments' => array(
       'form' => array(),
     ),

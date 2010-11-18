@@ -204,3 +204,215 @@ class EmailkitList {
   }
   
 }
+
+/**
+ * Defines a subscriber that can subscribe to any number of e-mail lists. A subscriber has an e-mail address and may or may not be associated with a user account.
+ */
+class EmailkitListSubscriber {
+
+  // These correspond to the fields in the emailkit_list_subscriber table
+  private $sid;
+  private $address;
+  private $uid = 0;
+
+  /**
+   * Creates a new subscriber with the given address and user ID.
+   *
+   * @param $address The e-mail address of the subscriber.
+   * @param $uid The user ID or 0 if this subscriber is anonymous. (optional)
+   *
+   * @return A subscriber
+   */
+  public function __construct($address, $uid = 0) {
+    $this->setAddress($address);
+    $this->setUserID($uid);
+  }
+  
+  /**
+   * Creates and returns a subscriber with the given database record.
+   *
+   * @param $record The record containing all parameters of the subscriber.
+   *
+   * @return A subscriber.
+   */
+  protected static function subscriberWithRecord($record) {
+    $list = new EmailkitListSubscriber($record->address, $record->uid);
+    $list->setId($record->sid);
+    return $list;
+  }
+
+  /**
+   * Returns a flag indicating whether this subscriber does not exist in the database yet.
+   */
+  public function isNew() {
+    return $this->getId() == NULL;
+  }
+
+  /**
+   * Returns the unique identifier of this subscriber.
+   */
+  public function getId() {
+    return $this->sid;
+  }
+
+  /**
+   * Sets the unique identifier of this subscriber.
+   */
+  private function setId($sid) {
+    if ($sid != NULL && !is_numeric($sid)) {
+      trigger_error(sprintf("Subscriber identifier must be NULL or a number: %d", $sid), E_USER_ERROR);
+      return;
+    }
+    
+    $this->sid = $sid;
+  }
+
+  /**
+   * Returns the e-mail address of this subscriber.
+   */
+  public function getAddress() {
+    return $this->address;
+  }
+
+  /**
+   * Sets the e-mail address of this subscriber.
+   */
+  public function setAddress($address) {
+    if (!valid_email_address($address)) {
+      trigger_error(sprintf("Subscriber address must be a valid e-mail address: %s", $address), E_USER_ERROR);
+      return;
+    }
+    
+    $this->address = $address;
+  }
+
+  /**
+   * Returns the user ID of this subscriber.
+   */
+  public function getUserId() {
+    return $this->uid;
+  }
+
+  /**
+   * Sets the user ID of this subscriber.
+   */
+  public function setUserId($uid) {
+    if (!is_numeric($uid)) {
+      trigger_error(sprintf("Subscriber user ID must be a number: %d", $uid), E_USER_ERROR);
+      return;
+    }
+    
+    $this->uid = $uid;
+  }
+
+  /**
+   * Returns the user of this subscribert, or NULL if this subscriber has no user ID.
+   */
+  public function getUser() {
+    return user_load($this->getUserId());
+  }
+  
+  /**
+   * Loads all subscribers from the database.
+   *
+   * @return An array of subscribers, keyed and ordered by their unique identifier.
+   */
+  public static function loadAll() {
+    $subscribers = array();
+    
+    $result = db_query("SELECT * FROM {emailkit_list_subscriber} ORDER BY sid ASC");
+    while ($record = db_fetch_object($result)) {
+      $subscriber = EmailkitListSubscriber::subscriberWithRecord($record);
+      $subscribers[$subscriber->getId()] = $subscriber;
+    }
+    
+    return $subscribers;
+  }
+
+  /**
+   * Load the subscriber with the given identifier from the database.
+   *
+   * @return A subscriber, or NULL if it cannot be found.
+   */
+  public static function loadWithId($sid) {
+    if (!is_numeric($sid)) {
+      trigger_error(sprintf("Subscriber identifier must be a number: %d", $sid), E_USER_ERROR);
+      return;
+    }
+
+    $result = db_query("SELECT * FROM {emailkit_list_subscriber} WHERE sid = %d", $sid);
+    if ($record = db_fetch_object($result)) {
+      return EmailkitListSubscriber::subscriberWithRecord($record);
+    }
+    else {
+      return NULL;
+    }
+  }
+  
+  /**
+   * Deletes the subscriber with the given identifier from the database.
+   *
+   * @return A flag indicating whether the subscriber was deleted.
+   */
+  public static function deleteWithId($sid) {
+    if (!is_numeric($sid)) {
+      trigger_error(sprintf("Subscriber identifier must be a number: %d", $sid), E_USER_ERROR);
+      return FALSE;
+    }
+
+    db_query("DELETE FROM {emailkit_list_subscriber} WHERE sid = %d", $sid);
+    return db_affected_rows() == 1;
+  }
+
+  /**
+   * Saves this subscriber to the database, inserting a new record or updating an existing record as necessary.
+   *
+   * @return Returns FALSE, SAVED_NEW or SAVED_UPDATED depending on whether saving was successful.
+   */
+  public function save() {
+    if ($this->isNew()) {
+      db_query("INSERT INTO {emailkit_list_subscriber} (address, uid) VALUES ('%s', %d)", $this->getAddress(), $this->getUserId());
+      $this->setId(db_last_insert_id('emailkit_list_subscriber', 'sid'));
+      
+      $rows = db_affected_rows();
+      if ($rows == 1) {
+        return SAVED_NEW;
+      }
+      else {
+        trigger_error(sprintf("Number of affected rows should be one: %d", $rows), E_USER_WARNING);
+        return FALSE;
+      }
+    }
+    else {
+      db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', uid = %d WHERE sid = %d", $this->getAddress(), $this->getUserId(), $this->getId());
+
+      $rows = db_affected_rows();
+      if ($rows == 1) {
+        return SAVED_UPDATED;
+      }
+      else {
+        trigger_error(sprintf("Number of affected rows should be one: %d", $rows), E_USER_WARNING);
+        return FALSE;
+      }
+    }
+  }
+
+  /**
+   * Deletes this subscriber from the database.
+   *
+   * @return A flag indicating whether the subscriber was deleted.
+   */
+  public function delete() {
+    db_query("DELETE FROM {emailkit_list_subscriber} WHERE sid = %d", $this->getId());
+    
+    $rows = db_affected_rows();
+    if ($rows == 1) {
+      return TRUE;
+    }
+    else {
+      trigger_error(sprintf("Number of affected rows should be one: %d", $rows), E_USER_WARNING);
+      return FALSE;
+    }
+  }
+
+}
