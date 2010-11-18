@@ -356,6 +356,26 @@ class EmailkitListSubscriber {
   }
   
   /**
+   * Load the subscriber associated with the given user ID from the database.
+   *
+   * @return A subscriber, or NULL if it cannot be found.
+   */
+  public static function loadWithUserId($uid) {
+    if (!is_numeric($uid)) {
+      trigger_error(sprintf("User identifier must be a number: %d", $uid), E_USER_ERROR);
+      return;
+    }
+
+    $result = db_query("SELECT * FROM {emailkit_list_subscriber} WHERE uid = %d", $uid);
+    if ($record = db_fetch_object($result)) {
+      return EmailkitListSubscriber::subscriberWithRecord($record);
+    }
+    else {
+      return NULL;
+    }
+  }
+  
+  /**
    * Deletes the subscriber with the given identifier from the database.
    *
    * @return A flag indicating whether the subscriber was deleted.

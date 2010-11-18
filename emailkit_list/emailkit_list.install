@@ -74,6 +74,9 @@ function emailkit_list_schema() {
     'unique keys' => array(
       'address' => array('address'),
     ),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
   );
 
   return $schema;

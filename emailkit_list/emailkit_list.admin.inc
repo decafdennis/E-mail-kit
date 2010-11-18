@@ -273,13 +273,19 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
   // TODO: Check duplicate e-mail addresses
 
   if (!empty($form_state['values']['username'])) {
+    // Check whether a user with that username exists
     $user = user_load(array('name' => $form_state['values']['username']));
-    
     if (!$user) {
       form_set_error('username', t('The user account %username does not exist.', array('%username' => $form_state['values']['username'])));
     }
     else {
-      // TODO: Check duplicate user IDs (except anonymous)
+      module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
+      
+      // Check whether the user account is already associated with a different subscriber
+      $user_subscriber = EmailkitListSubscriber::loadWithUserId($user->uid);
+      if ($user_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->getId() == $user_subscriber->getId())) {
+        form_set_error('username', t('The user account %username is already associated with another subscriber.', array('%username' => $form_state['values']['username'])));
+      }
     }
   }
 }
