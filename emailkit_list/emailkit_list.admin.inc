@@ -242,7 +242,17 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     '#required' => TRUE,
   );
   
-  // TODO: User field
+  if (isset($subscriber)) {
+    $user = $subscriber->getUser();
+  }
+  $form['username'] = array(
+    '#type' => 'textfield',
+    '#title' => t('User account'),
+    '#maxlength' => 60,
+    '#autocomplete_path' => 'user/autocomplete',
+    '#default_value' => isset($user) ? $user->name : '',
+    '#description' => t('The username of the subscriber. Leave blank if this subscriber has no user account on the site.'),
+  );
   
   $form['submit'] = array(
     '#type' => 'submit',
@@ -261,7 +271,17 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
   }
   
   // TODO: Check duplicate e-mail addresses
-  // TODO: Check duplicate user IDs (except anonymous)
+
+  if (!empty($form_state['values']['username'])) {
+    $user = user_load(array('name' => $form_state['values']['username']));
+    
+    if (!$user) {
+      form_set_error('username', t('The user account %username does not exist.', array('%username' => $form_state['values']['username'])));
+    }
+    else {
+      // TODO: Check duplicate user IDs (except anonymous)
+    }
+  }
 }
 
 /**
@@ -270,13 +290,22 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
 function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
   module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
   
+  // Determine the entered user ID
+  if (!empty($form_state['values']['username']) && ($user = user_load(array('name' => $form_state['values']['username'])))) {
+    $uid = $user->uid;
+  }
+  else {
+    $uid = 0;
+  }
+  
   // Update the existing list or create a new one
   if (isset($form['#subscriber'])) {
     $subscriber = $form['#subscriber'];
     $subscriber->setAddress($form_state['values']['address']);
+    $subscriber->setUserId($uid);
   }
   else {
-    $subscriber = new EmailkitListSubscriber($form_state['values']['address']);
+    $subscriber = new EmailkitListSubscriber($form_state['values']['address'], $uid);
   }
   
   $result = $subscriber->save();  
@@ -400,11 +429,14 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
   $output = "";
 
   // Start building the subscribers table
-  $header = array(t('E-mail address'), array('data' => t('Operations'), 'colspan' => 2));
+  $header = array(t('E-mail address'), t('User account'), array('data' => t('Operations'), 'colspan' => 2));
   $rows = array();
   foreach (element_children($form['subscribers']) as $sid) {
+    $subscriber = $form['subscribers'][$sid]['#subscriber'];
+    
     $row = array();
-    $row[] = check_plain($form['subscribers'][$sid]['#subscriber']->getAddress());
+    $row[] = check_plain($subscriber->getAddress());
+    $row[] = theme('username', $subscriber->getUser());
     $row[] = l(t('edit'), 'admin/emailkit/list/subscribers/' . $sid . '/edit', array('query' => drupal_get_destination()));
     $row[] = l(t('delete'), 'admin/emailkit/list/subscribers/' . $sid . '/delete', array('query' => drupal_get_destination()));
     $rows[] = $row;
@@ -413,7 +445,7 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
   // If we don't have any rows, add a placeholder
   if (empty($rows)) {
     $row = array();
-    $row[] = array('data' => t('No subscribers have been defined yet.'), 'colspan' => 3);
+    $row[] = array('data' => t('No subscribers have been defined yet.'), 'colspan' => 4);
     $rows[] = $row;
   }
   
