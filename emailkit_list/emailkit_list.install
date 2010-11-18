@@ -1,0 +1,51 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_install().
+ */
+function emailkit_list_install() {
+  drupal_install_schema('emailkit_list');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function emailkit_list_uninstall() {
+  drupal_uninstall_schema('emailkit_list');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function emailkit_list_schema() {
+  $schema = array();
+
+  $schema['emailkit_list'] = array(
+    'description' => 'Contains information about e-mail lists.',
+    'fields' => array(
+      'lid' => array(
+        'description' => 'The list identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The list name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'weight' => array(
+        'description' => 'The list weight.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('lid'),
+  );
+
+  return $schema;
+}

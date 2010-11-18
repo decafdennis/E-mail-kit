@@ -1,0 +1,110 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_perm().
+ */
+function emailkit_list_perm() {
+  $perm = array();
+  
+  // Permission for adding, editing and deleting e-mail lists
+  $perm[] = 'administer e-mail lists';
+  
+  return $perm;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function emailkit_list_menu() {
+  $items = array();
+
+  // Menu items for adding, editing and deleting e-mail lists
+  $items['admin/emailkit/list/lists'] = array(
+    'title' => 'Lists',
+    'page callback' => 'emailkit_list_admin_list',
+    'access arguments' => array('administer e-mail lists'),
+    'file' => 'emailkit_list.admin.inc',
+  );
+  $items['admin/emailkit/list/lists/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/emailkit/list/lists/add'] = array(
+    'title' => 'Add list',
+    'page callback' => 'emailkit_list_admin_add',
+    'access arguments' => array('administer e-mail lists'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/emailkit/list/lists/%emailkit_list/edit'] = array(
+    'title' => 'Edit list',
+    'page callback' => 'emailkit_list_admin_edit',
+    'page arguments' => array(4),
+    'access arguments' => array('administer e-mail lists'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/emailkit/list/lists/%emailkit_list/delete'] = array(
+    'title' => 'Delete list',
+    'page callback' => 'emailkit_list_admin_delete',
+    'page arguments' => array(4),
+    'access arguments' => array('administer e-mail lists'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  
+  return $items;
+}
+
+/**
+ * Function used as a page argument callback for the menu items for editing and deleting e-mail lists.
+ */
+function emailkit_list_load($lid) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
+  
+  if (is_numeric($lid)) {
+    return EmailkitList::loadWithId($lid);
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function emailkit_list_theme() {
+  $theme = array();
+  
+  // Theming for the e-mail lists admin form
+  $theme['emailkit_list_admin_list_form'] = array(
+    'arguments' => array(
+      'form' => array(),
+    ),
+    'file' => 'emailkit_list.admin.inc',
+  );
+  
+  return $theme;
+}
+
+/**
+ * Private function that adds a class to a form element.
+ */
+function _emailkit_list_element_add_class(&$element, $class) {
+  // Make sure we have an attributes array
+  if (!isset($element['#attributes'])) {
+    $element['#attributes'] = array();
+  }
+  
+  // Make sure we have a class attribute
+  if (!isset($element['#attributes']['class'])) {
+    $element['#attributes']['class'] = '';
+  }
+  else {
+    $element['#attributes']['class'] .= ' ';
+  }
+  
+  $element['#attributes']['class'] .= $class;
+}
