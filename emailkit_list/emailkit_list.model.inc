@@ -191,10 +191,7 @@ class EmailkitList {
    * @return A flag indicating whether the e-mail list was deleted.
    */
   public function delete() {
-    db_query("DELETE FROM {emailkit_list} WHERE lid = %d", $this->getId());
-    
-    $rows = db_affected_rows();
-    if ($rows == 1) {
+    if (EmailkitList::deleteWithId($this->getId())) {
       return TRUE;
     }
     else {
@@ -473,10 +470,7 @@ class EmailkitListSubscriber {
    * @return A flag indicating whether the subscriber was deleted.
    */
   public function delete() {
-    db_query("DELETE FROM {emailkit_list_subscriber} WHERE sid = %d", $this->getId());
-    
-    $rows = db_affected_rows();
-    if ($rows == 1) {
+    if (EmailkitListSubscriber::deleteWithId($this->getId())) {
       return TRUE;
     }
     else {
