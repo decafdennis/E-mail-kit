@@ -309,6 +309,10 @@ class EmailkitListSubscriber {
    * Returns the user of this subscribert, or NULL if this subscriber has no user ID.
    */
   public function getUser() {
+    if ($this->getUserId() == 0) {
+      return NULL;
+    }
+
     $user = user_load($this->getUserId());
     if ($user !== FALSE) {
       return $user;
