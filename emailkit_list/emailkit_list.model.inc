@@ -327,10 +327,26 @@ class EmailkitListSubscriber {
    *
    * @return An array of subscribers, keyed and ordered by their unique identifier.
    */
-  public static function loadAll() {
+  public static function loadAll($tablesort_header = NULL, $pager_limit = NULL, $pager_element = 0) {
     $subscribers = array();
     
-    $result = db_query("SELECT * FROM {emailkit_list_subscriber} ORDER BY sid ASC");
+    // Build the SQL query
+    $sql = "SELECT * FROM {emailkit_list_subscriber}";
+    if (isset($tablesort_header)) {
+      $sql .= tablesort_sql($tablesort_header);
+    }
+    else {
+      $sql .= " ORDER BY sid ASC";
+    }
+
+    // Run the SQL query
+    if (isset($pager_limit) && isset($pager_element)) {
+      $result = pager_query($sql, $pager_limit, $pager_element);
+    }
+    else {
+      $result = db_query($sql);
+    }
+    
     while ($record = db_fetch_object($result)) {
       $subscriber = EmailkitListSubscriber::subscriberWithRecord($record);
       $subscribers[$subscriber->getId()] = $subscriber;

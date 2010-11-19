@@ -12,6 +12,11 @@ define('EMAILKIT_LIST_ADMIN_LIST_FORM_LISTS_ID', 'lists');
 define('EMAILKIT_LIST_ADMIN_LIST_FORM_LIST_WEIGHT_CLASS', 'list-weight');
 
 /**
+ * The number of subscribers displayed at once on the subscribers admin page.
+ */
+define('EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT', 50);
+
+/**
  * Returns the admin page that lists the e-mail lists.
  */
 function emailkit_list_admin_list() {
@@ -189,22 +194,27 @@ function emailkit_list_admin_delete_confirm_form_submit($form, &$form_state) {
  * Returns the admin page that lists subscribers.
  */
 function emailkit_list_admin_subscriber_list() {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
-  // TODO: Paging
-
-  return drupal_get_form('emailkit_list_admin_subscriber_list_form', EmailkitListSubscriber::loadAll());
+  return drupal_get_form('emailkit_list_admin_subscriber_list_form');
 }
 
 /**
  * Returns the subscribers admin form.
  */
-function emailkit_list_admin_subscriber_list_form(&$form_state, $subscribers) {
+function emailkit_list_admin_subscriber_list_form(&$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
+  
   $form = array();
   
+  $header = array(
+    array('data' => t('E-mail address'), 'field' => 'address'),
+    array('data' => t('User account'), 'field' => 'uid'),
+  );
+  $subscribers = EmailkitListSubscriber::loadAll($header, EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT);
   foreach ($subscribers as $sid => $subscriber) {
     $form['subscribers'][$sid]['#subscriber'] = $subscriber;
   }
+  
+  $form['pager'] = array('#value' => theme('pager', NULL, EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT));
 
   return $form;
 }
@@ -449,7 +459,11 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
   $output = "";
 
   // Start building the subscribers table
-  $header = array(t('E-mail address'), t('User account'), array('data' => t('Operations'), 'colspan' => 2));
+  $header = array(
+    array('data' => t('E-mail address'), 'field' => 'address'),
+    array('data' => t('User account'), 'field' => 'uid'),
+    array('data' => t('Operations'), 'colspan' => 2)
+  );
   $rows = array();
   foreach (element_children($form['subscribers']) as $sid) {
     $subscriber = $form['subscribers'][$sid]['#subscriber'];
