@@ -293,8 +293,6 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
       }
     }
   }
-  
-  // TODO: Check duplicate e-mail addresses
 
   if (!empty($form_state['values']['username'])) {
     // Check whether a user with that username exists
