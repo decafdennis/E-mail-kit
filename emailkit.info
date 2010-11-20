@@ -1,0 +1,6 @@
+; Developed by Dennis Stevense for Digital Deployment
+name = E-mail kit
+description = Allows other modules to send and process messages that will eventually be sent out as e-mails.
+package = E-mail kit
+version = 6.x-1.x-dev
+core = 6.x

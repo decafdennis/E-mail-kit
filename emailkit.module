@@ -1,0 +1,36 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_perm().
+ */
+function emailkit_perm() {
+  $perm = array();
+
+  $perm[] = 'administer e-mail kit';
+  
+  return $perm;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function emailkit_menu() {
+  $items = array();
+
+  $items['admin/emailkit'] = array(
+    'title' => 'E-mail kit',
+    'page callback' => 'emailkit_admin',
+    'access arguments' => array('administer e-mail kit'),
+  );
+  
+  return $items;
+}
+
+/**
+ * Returns the general admin page.
+ */
+function emailkit_admin() {
+  module_load_include('inc', 'system', 'system.admin');
+  return system_admin_menu_block_page();
+}

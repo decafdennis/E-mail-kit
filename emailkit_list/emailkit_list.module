@@ -25,11 +25,10 @@ function emailkit_list_perm() {
 function emailkit_list_menu() {
   $items = array();
   
-  // TODO: Add callback for admin/emailkit/list
-
   // Menu items for adding, editing and deleting e-mail lists
   $items['admin/emailkit/list/lists'] = array(
     'title' => 'Lists',
+    'description' => 'Manage the e-mail lists that users can subscribe to.',
     'page callback' => 'emailkit_list_admin_list',
     'access arguments' => array('administer e-mail lists'),
     'file' => 'emailkit_list.admin.inc',
@@ -66,6 +65,7 @@ function emailkit_list_menu() {
   // Menu items for adding, editing and deleting subscribers
   $items['admin/emailkit/list/subscribers'] = array(
     'title' => 'Subscribers',
+    'description' => 'Manage subscribers.',
     'page callback' => 'emailkit_list_admin_subscriber_list',
     'access arguments' => array('administer subscribers'),
     'file' => 'emailkit_list.admin.inc',
