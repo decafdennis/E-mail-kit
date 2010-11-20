@@ -13,6 +13,9 @@ function emailkit_list_perm() {
   // Permissions for adding, editing and deleting subscribers
   $perm[] = 'administer subscribers';
   
+  // Permissions for regular users
+  $perm[] = 'edit own subscriptions';
+  
   return $perm;
 }
 
@@ -150,6 +153,25 @@ function emailkit_list_theme() {
   );
   
   return $theme;
+}
+
+/**
+ * Implementation of hook_user().
+ */
+function emailkit_list_user($op, &$edit, &$account, $category = NULL) {
+  if (!(user_access('edit own subscriptions') || user_access('administer subscriptions'))) {
+    return;
+  }
+  
+  module_load_include('inc', 'emailkit_list', 'emailkit_list.user');
+  
+  switch ($op) {
+    case 'form':
+      return emailkit_list_user_form($account);
+      
+    case 'update':
+      return emailkit_list_user_form_submit($account, $edit);
+  }
 }
 
 /**
