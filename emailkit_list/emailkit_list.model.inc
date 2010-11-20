@@ -148,6 +148,7 @@ class EmailkitList {
       return FALSE;
     }
 
+    db_query("DELETE FROM {emailkit_list_subscription} WHERE lid = %d", $lid);
     db_query("DELETE FROM {emailkit_list} WHERE lid = %d", $lid);
     return db_affected_rows() == 1;
   }
@@ -211,6 +212,10 @@ class EmailkitListSubscriber {
   private $sid;
   private $address;
   private $uid = 0;
+  
+  // These are used for caching subscription list IDs for getting (saved) and setting (unsaved)
+  private $saved_lids;
+  private $unsaved_lids;
 
   /**
    * Creates a new subscriber with the given address and user ID.
@@ -317,6 +322,62 @@ class EmailkitListSubscriber {
     else {
       return NULL;
     }
+  }
+  
+  /**
+   * Returns the subscription list IDs of this subscriber.
+   */
+  public function getSubscriptionListIds() {
+    // Try to use a previously set value
+    if (isset($this->unsaved_lids)) {
+      return $this->unsaved_lids;
+    }
+    // Try to use a previously fetched value
+    else if (isset($this->saved_lids)) {
+      return $this->saved_lids;
+    }
+    // Fetch the value from the database
+    else {
+      $this->saved_lids = array();
+
+      if (!$this->isNew()) {
+        $result = db_query("SELECT lid FROM {emailkit_list_subscription} WHERE sid = %d", $this->getId());
+        while ($lid = db_result($result)) {
+          $this->saved_lids[] = $lid;
+        }
+      }
+      
+      return $this->saved_lids;
+    }
+  }
+  
+  /**
+   * Sets the subscription list IDs of this subscriber.
+   */
+  public function setSubscriptionListIds($lids) {
+    if (!is_array($lids)) {
+      trigger_error(sprintf("Subscriber list IDs must be an array"), E_USER_ERROR);
+      return;
+    }
+
+    if ($this->unsaved_lids != $lids) {
+      $this->unsaved_lids = $lids;
+    }
+  }
+  
+  /**
+   * Returns a flag indicating whether the subscription list IDs of this subscriber need to be saved to the database.
+   */
+  protected function isSubscriptionListIdsSaved() {
+    return !isset($this->unsaved_lids);
+  }
+  
+  /**
+   * Called when the subscription list IDs have been saved to the database.
+   */
+  protected function setSubscriptionListIdsSaved() {
+    $this->saved_lids = $this->unsaved_lids;
+    $this->unsaved_lids = NULL;
   }
   
   /**
@@ -427,6 +488,7 @@ class EmailkitListSubscriber {
       return FALSE;
     }
 
+    db_query("DELETE FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
     db_query("DELETE FROM {emailkit_list_subscriber} WHERE sid = %d", $sid);
     return db_affected_rows() == 1;
   }
@@ -438,30 +500,42 @@ class EmailkitListSubscriber {
    */
   public function save() {
     if ($this->isNew()) {
+      $result = SAVED_NEW;
+      
       db_query("INSERT INTO {emailkit_list_subscriber} (address, uid) VALUES ('%s', %d)", $this->getAddress(), $this->getUserId());
       $this->setId(db_last_insert_id('emailkit_list_subscriber', 'sid'));
-      
+
       $rows = db_affected_rows();
-      if ($rows == 1) {
-        return SAVED_NEW;
-      }
-      else {
+      if ($rows != 1) {
         trigger_error(sprintf("Number of affected rows should be one: %d", $rows), E_USER_WARNING);
         return FALSE;
       }
     }
     else {
+      $result = SAVED_UPDATED;
+      
       db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', uid = %d WHERE sid = %d", $this->getAddress(), $this->getUserId(), $this->getId());
 
       $rows = db_affected_rows();
-      if ($rows == 1) {
-        return SAVED_UPDATED;
-      }
-      else {
+      if ($rows != 1) {
         trigger_error(sprintf("Number of affected rows should be one: %d", $rows), E_USER_WARNING);
         return FALSE;
       }
     }
+    
+    // Save the subscriptions, if necessary
+    if (!$this->isSubscriptionListIdsSaved()) {
+      db_query("DELETE FROM {emailkit_list_subscription} WHERE sid = %d", $this->getId());
+      
+      $lids = $this->getSubscriptionListIds();
+      foreach ($lids as $lid) {
+        db_query("INSERT INTO {emailkit_list_subscription} (lid, sid) VALUES (%d, %d)", $lid, $this->getId());
+      }
+      
+      $this->setSubscriptionListIdsSaved();
+    }
+    
+    return $result;
   }
 
   /**

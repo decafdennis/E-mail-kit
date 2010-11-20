@@ -78,6 +78,25 @@ function emailkit_list_schema() {
       'uid' => array('uid'),
     ),
   );
+  
+  $schema['emailkit_list_subscription'] = array(
+    'description' => 'Contains information about which subscribers are subscribed to which lists.',
+    'fields' => array(
+      'lid' => array(
+        'description' => 'A list identifier.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'sid' => array(
+        'description' => 'A subscriber identifier.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('lid', 'sid'),
+  );
 
   return $schema;
 }

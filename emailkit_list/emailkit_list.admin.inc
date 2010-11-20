@@ -237,6 +237,8 @@ function emailkit_list_admin_subscriber_edit($subscriber) {
  * Returns a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
+  
   $form = array();
   
   // New, or existing list?
@@ -263,6 +265,33 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     '#default_value' => isset($user) ? $user->name : '',
     '#description' => t('The username of the subscriber. Leave blank if this subscriber has no user account on the site.'),
   );
+  
+  $lists = EmailkitList::loadAll();
+  $options = array();
+  foreach ($lists as $lid => $list) {
+    $options[$lid] = $list->getName();
+  }
+  if (empty($options)) {
+    $form['subscriptions'] = array(
+      '#type' => 'value',
+      '#value' => array(),
+    );
+    
+    $form['subscriptions_empty'] = array(
+      '#type' => 'item',
+      '#title' => t('Subscriptions'),
+      '#value' => t('No lists have been defined yet.'),
+    );
+  }
+  else {
+    $form['subscriptions'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Subscriptions'),
+      '#options' => $options,
+      '#default_value' => isset($subscriber) ? $subscriber->getSubscriptionListIds() : array(),
+      '#description' => t('Select the lists to which the subscriber is subscribed to.'),
+    );
+  }
   
   $form['submit'] = array(
     '#type' => 'submit',
@@ -335,6 +364,7 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
   else {
     $subscriber = new EmailkitListSubscriber($form_state['values']['address'], $uid);
   }
+  $subscriber->setSubscriptionListIds(array_keys(array_filter($form_state['values']['subscriptions'])));
   
   $result = $subscriber->save();  
   switch ($result) {
