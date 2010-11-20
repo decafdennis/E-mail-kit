@@ -1,0 +1,43 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_perm().
+ */
+function emailkit_node_perm() {
+  $perm = array();
+  
+  $perm[] = 'e-mail content';
+  $perm[] = 'e-mail own content';
+  
+  return $perm;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function emailkit_node_menu() {
+  $items = array();
+
+  $items['node/%node/email'] = array(
+    'title' => 'E-mail',
+    'page callback' => 'emailkit_node_email',
+    'page arguments' => array(1),
+    'access callback' => 'emailkit_node_access',
+    'access arguments' => array(1),
+    'weight' => 10,
+    'file' => 'emailkit_node.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  
+  return $items;
+}
+
+/**
+ * Returns a flag indicating whether the user should have access to the E-mail tab on nodes.
+ */
+function emailkit_node_access($node) {
+  global $user;
+  
+  return user_access('e-mail content') || ($node->uid == $user->uid && user_access('e-mail own content'));
+}
