@@ -360,7 +360,7 @@ class EmailkitListSubscriber {
       return;
     }
 
-    if ($this->unsaved_lids != $lids) {
+    if ($this->unsaved_lids !== $lids) {
       $this->unsaved_lids = $lids;
     }
   }
