@@ -175,6 +175,20 @@ function emailkit_list_user($op, &$edit, &$account, $category = NULL) {
 }
 
 /**
+ * Implementation of hook_emailkit_destinations().
+ */
+function emailkit_list_emailkit_destinations() {
+  $destinations = array();
+  
+  $destinations['emailkit_list'] = array(
+    'name' => t('E-mail list'),
+    'file' => 'emailkit_list.destination.inc',
+  );
+  
+  return $destinations;
+}
+
+/**
  * Private function that adds a class to a form element.
  */
 function _emailkit_list_element_add_class(&$element, $class) {

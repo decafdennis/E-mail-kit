@@ -15,8 +15,14 @@ function emailkit_node_email_form(&$form_state, $node) {
   $form = array(
     '#node' => $node,
   );
-  
-  // TODO: Allow a destination to be selected
+
+  // Note: we can't call this field 'destination', because it collides with Drupal's drupal_get_destination() stuff
+  $form['dest'] = array(
+    '#type' => 'emailkit_destination_select',
+    '#title' => t('Destination'),
+    '#required' => TRUE,
+    '#description' => t('Specify the destination to which to send the e-mail.'),
+  );
   
   $form['send'] = array(
     '#type' => 'submit',
@@ -31,7 +37,11 @@ function emailkit_node_email_form(&$form_state, $node) {
  */
 function emailkit_node_email_form_submit($form, &$form_state) {
   $node = $form['#node'];
-  
-  // TODO: Send e-mail
-  dsm($node);
+
+  if (emailkit_destination_select_dispatch($form_state['values']['dest'])) {
+    drupal_set_message(t('E-mail was sent successfully.'));
+  }
+  else {
+    drupal_set_message(t('Failed to send e-mail.'), 'error');
+  }
 }

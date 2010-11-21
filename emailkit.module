@@ -20,17 +20,226 @@ function emailkit_menu() {
 
   $items['admin/emailkit'] = array(
     'title' => 'E-mail kit',
-    'page callback' => 'emailkit_admin',
+    'page callback' => 'system_admin_menu_block_page',
     'access arguments' => array('administer e-mail kit'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
   );
   
   return $items;
 }
 
 /**
- * Returns the general admin page.
+ * Implementation of hook_elements().
  */
-function emailkit_admin() {
-  module_load_include('inc', 'system', 'system.admin');
-  return system_admin_menu_block_page();
+function emailkit_elements() {
+  $elements = array();
+  
+  $elements['emailkit_destination_select'] = array(
+    '#input' => TRUE,
+    '#process' => array('_emailkit_destination_select_process'),
+    '#after_build' => array('_emailkit_destination_select_after_build'),
+  );
+  
+  return $elements;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function emailkit_theme() {
+  $theme = array();
+  
+  $theme['emailkit_destination_select'] = array(
+    'arguments' => array(
+      'element' => array(),
+    ),
+    'file' => 'emailkit.destination_select.inc',
+  );
+  $theme['emailkit_destination_select_children'] = array(
+    'arguments' => array(
+      'element' => array(),
+    ),
+    'file' => 'emailkit.destination_select.inc',
+  );
+  
+  return $theme;
+}
+
+/**
+ * Implementation of hook_emailkit_destinations().
+ */
+function emailkit_emailkit_destinations() {
+  $destinations = array();
+  
+  $destinations['emailkit_address'] = array(
+    'name' => t('E-mail address'),
+    'file' => 'emailkit.address_destination.inc',
+  );
+  
+  return $destinations;
+}
+
+/**
+ * Returns all available destinations.
+ *
+ * @return An array of destinations keyed by name.
+ */
+function emailkit_destinations($reset = FALSE) {
+  static $destinations = NULL;
+  
+  // Do we need to (re)load the cache?
+  if (!isset($destinations) || $reset) {
+    $destinations = array();
+    
+    // Invoke hook_email_destinations() on each module that implements it
+    foreach (module_implements('emailkit_destinations') as $module) {
+      $module_destinations = call_user_func($module . '_emailkit_destinations');
+      
+      foreach ($module_destinations as $key => $module_destination) {
+        // Set the 'base' to the destination name, if necessary
+        if (!isset($module_destination['base'])) {
+          $module_destination['base'] = $key;
+        }
+
+        // Determine the full path to the file that must be included, if necessary
+        if (isset($module_destination['file'])) {
+          $module_destination['include file'] = drupal_get_path('module', $module) . '/' . $module_destination['file'];
+        }
+        
+        $destinations[$key] = $module_destination;
+      }
+    }
+  }
+
+  return $destinations;
+}
+
+/**
+ * Invokes the given hook for the given destination.
+ *
+ * @param $hook A string indicating the name of the hook. Example: destination_form
+ * @param $destination A string indicating the name of the destination.
+ *
+ * @return Whatever is returned by the hook, or NULL if the hook is not implemented.
+ */
+function _emailkit_destination_invoke($hook, $destination) {
+  $destinations = emailkit_destinations();
+  if (!isset($destinations[$destination])) {
+    trigger_error(sprintf('Destination does not exist: %s', $destination), E_USER_ERROR);
+    return NULL;
+  }  
+  
+  $destination_info = $destinations[$destination];
+
+  // Load the include file, if necessary
+  if (isset($destination_info['include file'])) {
+    require_once($destination_info['include file']);
+  }
+
+  // Call the function, if it exists
+  $function = $destination_info['base'] . '_' . $hook;
+  if (function_exists($function)) {
+    // Pass on all arguments, except the $hook argument
+    $args = func_get_args();
+    array_shift($args);
+    
+    return call_user_func_array($function, $args);
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
+ * Returns the form for destination options for the given destination.
+ *
+ * @param $destination A string indicating the name of the destination.
+ *
+ * @return A form array, or NULL if the destination has no form.
+ */
+function emailkit_destination_form($destination) {
+  $form = _emailkit_destination_invoke('destination_form', $destination);
+
+  if (isset($form)) {
+    // Set the #destination if it hasn't been set
+    if (!isset($form['#destination'])) {
+      $form['#destination'] = $destination;
+    }
+    
+    // Install the default validation handler
+    if (!isset($form['#element_validate'])) {
+      $destinations = emailkit_destinations();
+      $destination_info = $destinations[$destination];
+      
+      $form['#element_validate'] = array($destination_info['base'] . '_destination_form_validate');
+    }
+  }
+  
+  return $form;
+}
+
+/**
+ * Dispatches a message based on the given emailkit_destination_select element value.
+ *
+ * @param $element_value The value of an emailkit_destination_select element.
+ *
+ * @return A flag indicating whether dispatch was successful.
+ */
+function emailkit_destination_select_dispatch($element_value) {
+  if (isset($element_value['destination'])) {
+    $destination = $element_value['destination'];
+    $form_values = isset($element_value['destination_form'][$destination]) ? $element_value['destination_form'][$destination] : NULL;
+
+    $result = _emailkit_destination_invoke('destination_form_dispatch', $destination, $form_values);
+    if ($result === NULL) {
+      $result = emailkit_destination_dispatch($destination, $form_values);
+    }
+    return $result;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Dispatches a message to the given destination based on the given options.
+ *
+ * @param $destination A string indicating the name of the destination.
+ * @param $options The options.
+ *
+ * @return A flag indicating whether dispatch was successful.
+ */
+function emailkit_destination_dispatch($destination, $options) {
+  return _emailkit_destination_invoke('destination_dispatch', $destination, $options);
+}
+
+/**
+ * Private helper function that will include the appropriate file and pass on the message.
+ */
+function _emailkit_destination_select_process($element) {
+  module_load_include('inc', 'emailkit', 'emailkit.destination_select');
+  
+  return emailkit_destination_select_process($element);
+}
+
+/**
+ * Private helper function that will include the appropriate file and pass on the message.
+ */
+function _emailkit_destination_select_after_build($element) {
+  module_load_include('inc', 'emailkit', 'emailkit.destination_select');
+  
+  return emailkit_destination_select_after_build($element);
+}
+
+/**
+ * Private helper function that marks the given element and all its children as validated.
+ */
+function _emailkit_element_set_validated(&$element) {
+  $element['#validated'] = TRUE;
+  
+  // Recurse
+  foreach (element_children($element) as $key) {
+    _emailkit_element_set_validated($element[$key]);
+  }
 }
