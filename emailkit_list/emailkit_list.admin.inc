@@ -36,6 +36,7 @@ function emailkit_list_admin_list_form(&$form_state, $lists) {
   // Only show weight fields if there is more than one list
   $weights = count($lists) > 1;
 
+  $form['lists'] = array();
   foreach ($lists as $lid => $list) {
     $form['lists'][$lid]['#list'] = $list;
     
@@ -210,6 +211,8 @@ function emailkit_list_admin_subscriber_list_form(&$form_state) {
     array('data' => t('User account'), 'field' => 'uid'),
   );
   $subscribers = EmailkitListSubscriber::loadAll($header, EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT);
+  
+  $form['subscribers'] = array();
   foreach ($subscribers as $sid => $subscriber) {
     $form['subscribers'][$sid]['#subscriber'] = $subscriber;
   }
