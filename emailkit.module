@@ -67,70 +67,105 @@ function emailkit_theme() {
 }
 
 /**
- * Implementation of hook_emailkit_destinations().
+ * Implementation of hook_emailkit_destination_info().
  */
-function emailkit_emailkit_destinations() {
+function emailkit_emailkit_destination_info() {
   $destinations = array();
   
-  $destinations['emailkit_address'] = array(
-    'name' => t('E-mail address'),
-    'file' => 'emailkit.address_destination.inc',
+  // Generic destination type
+  $info['emailkit_recipients'] = array(
+    'label' => t('Generic list of recipients'),
   );
   
-  return $destinations;
+  // Single e-mail address destination type
+  $info['emailkit_address'] = array(
+    'label' => t('E-mail address'),
+    'exposed' => TRUE,
+    'file' => 'emailkit.address.inc',
+  );
+  
+  return $info;
+}
+
+/**
+ * Implementation of emailkit_emailkit_dispatcher_info().
+ */
+function emailkit_emailkit_dispatcher_info() {
+  $info = array();
+  
+  // Default message dispatcher which services the default destination type
+  $info['emailkit_drupal'] = array(
+    'label' => t('Drupal'),
+    'destinations' => array('emailkit_recipients'),
+    'file' => 'emailkit.drupal_dispatcher.inc',
+  );
+  
+  // Dispatcher which services textual e-mail addresses, by forwarding them to the default message dispatcher
+  $info['emailkit_address'] = array(
+    'label' => t('Readdress as a generic list of recipients'),
+    'destinations' => array('emailkit_address'),
+    'file' => 'emailkit.address.inc',
+  );
+  
+  return $info;
 }
 
 /**
  * Returns all available destinations.
  *
- * @return An array of destinations keyed by name.
+ * @return An array of destination information keyed by destination name.
+ *
+ * @see hook_emailkit_destination_info()
  */
-function emailkit_destinations($reset = FALSE) {
-  static $destinations = NULL;
+function emailkit_destination_info($reset = FALSE) {
+  static $info = NULL;
   
   // Do we need to (re)load the cache?
-  if (!isset($destinations) || $reset) {
-    $destinations = array();
+  if (!isset($info) || $reset) {
+    $info = array();
     
-    // Invoke hook_email_destinations() on each module that implements it
-    foreach (module_implements('emailkit_destinations') as $module) {
-      $module_destinations = call_user_func($module . '_emailkit_destinations');
+    // Invoke hook_emailkit_destination_info() on all modules that implement it
+    foreach (module_implements('emailkit_destination_info') as $module) {
+      $module_info = call_user_func($module . '_emailkit_destination_info');
       
-      foreach ($module_destinations as $key => $module_destination) {
-        // Set the 'base' to the destination name, if necessary
-        if (!isset($module_destination['base'])) {
-          $module_destination['base'] = $key;
-        }
+      foreach ($module_info as $destination_name => $destination_info) {
+        // Set defaults
+        $destination_info += array(
+          'label' => t('(Unlabeled)'),
+          'exposed' => FALSE,
+          'file' => NULL,
+          'base' => $destination_name,
+        );
 
-        // Determine the full path to the file that must be included, if necessary
-        if (isset($module_destination['file'])) {
-          $module_destination['include file'] = drupal_get_path('module', $module) . '/' . $module_destination['file'];
+        // Determine the full path to the include file, if necessary
+        if (isset($destination_info['file'])) {
+          $destination_info['include file'] = drupal_get_path('module', $module) . '/' . $destination_info['file'];
         }
         
-        $destinations[$key] = $module_destination;
+        $info[$destination_name] = $destination_info;
       }
     }
   }
 
-  return $destinations;
+  return $info;
 }
 
 /**
  * Invokes the given hook for the given destination.
  *
- * @param $hook A string indicating the name of the hook. Example: destination_form
+ * @param $hook A string indicating the name of the hook, excluding the 'destination' prefix. Example: form_validate
  * @param $destination A string indicating the name of the destination.
  *
  * @return Whatever is returned by the hook, or NULL if the hook is not implemented.
  */
 function _emailkit_destination_invoke($hook, $destination) {
-  $destinations = emailkit_destinations();
-  if (!isset($destinations[$destination])) {
+  $info = emailkit_destination_info();
+  if (!isset($info[$destination])) {
     trigger_error(sprintf('Destination does not exist: %s', $destination), E_USER_ERROR);
     return NULL;
-  }  
+  }
   
-  $destination_info = $destinations[$destination];
+  $destination_info = $info[$destination];
 
   // Load the include file, if necessary
   if (isset($destination_info['include file'])) {
@@ -138,7 +173,7 @@ function _emailkit_destination_invoke($hook, $destination) {
   }
 
   // Call the function, if it exists
-  $function = $destination_info['base'] . '_' . $hook;
+  $function = $destination_info['base'] . '_destination_' . $hook;
   if (function_exists($function)) {
     // Pass on all arguments, except the $hook argument
     $args = func_get_args();
@@ -152,26 +187,36 @@ function _emailkit_destination_invoke($hook, $destination) {
 }
 
 /**
- * Returns the form for destination options for the given destination.
+ * Returns the form for the given exposed destination.
  *
  * @param $destination A string indicating the name of the destination.
  *
- * @return A form array, or NULL if the destination has no form.
+ * @return A form array, or NULL if the destination has no form or is not exposed.
  */
 function emailkit_destination_form($destination) {
-  $form = _emailkit_destination_invoke('destination_form', $destination);
+  $info = emailkit_destination_info();
+  if (!isset($info[$destination])) {
+    trigger_error(sprintf('Destination does not exist: %s', $destination), E_USER_ERROR);
+    return NULL;
+  }
+  
+  $destination_info = $info[$destination];
+    
+  if ($destination_info['exposed']) {
+    $form = _emailkit_destination_invoke('form', $destination);
+  }
+  else {
+    $form = NULL;
+  }
 
   if (isset($form)) {
-    // Set the #destination if it hasn't been set
+    // Set #destination if it hasn't been set
     if (!isset($form['#destination'])) {
       $form['#destination'] = $destination;
     }
     
-    // Install the default validation handler
+    // Install the default validation handler if it hasn't been set already
     if (!isset($form['#element_validate'])) {
-      $destinations = emailkit_destinations();
-      $destination_info = $destinations[$destination];
-      
       $form['#element_validate'] = array($destination_info['base'] . '_destination_form_validate');
     }
   }
@@ -180,38 +225,34 @@ function emailkit_destination_form($destination) {
 }
 
 /**
- * Dispatches a message based on the given emailkit_destination_select element value.
+ * Sends the given message to the given destination.
+ */
+function emailkit_send($message, $destination, $destination_options) {
+  // TODO: Find dispatcher
+  // TODO: Call hook_dispatcher_send() on dispatcher
+  drupal_set_message("TODO: Send message to $destination with options " . print_r($destination_options, TRUE));
+}
+
+/**
+ * Sends the given message to the destination given by the emailkit_destination_select element value.
  *
  * @param $element_value The value of an emailkit_destination_select element.
- *
- * @return A flag indicating whether dispatch was successful.
  */
-function emailkit_destination_select_dispatch($element_value) {
+function emailkit_destination_select_send($message, $element_value) {
   if (isset($element_value['destination'])) {
     $destination = $element_value['destination'];
     $form_values = isset($element_value['destination_form'][$destination]) ? $element_value['destination_form'][$destination] : NULL;
-
-    $result = _emailkit_destination_invoke('destination_form_dispatch', $destination, $form_values);
-    if ($result === NULL) {
-      $result = emailkit_destination_dispatch($destination, $form_values);
+    
+    $destination_options = _emailkit_destination_invoke('form_submit', $destination, $form_values);
+    if (!isset($destination_options)) {
+      $destination_options = $form_values;
     }
-    return $result;
+    
+    return emailkit_send($message, $destination, $destination_options);
   }
   else {
     return FALSE;
   }
-}
-
-/**
- * Dispatches a message to the given destination based on the given options.
- *
- * @param $destination A string indicating the name of the destination.
- * @param $options The options.
- *
- * @return A flag indicating whether dispatch was successful.
- */
-function emailkit_destination_dispatch($destination, $options) {
-  return _emailkit_destination_invoke('destination_dispatch', $destination, $options);
 }
 
 /**

@@ -7,6 +7,7 @@
 function emailkit_address_destination_form($destination) {
   $form = array();
   
+  // Allow the user to enter an e-mail address
   $form['address'] = array(
     '#type' => 'textfield',
     '#title' => t('E-mail address'),
@@ -21,16 +22,25 @@ function emailkit_address_destination_form($destination) {
  * Implementation of hook_destination_form_validate() for the emailkit_address destination.
  */
 function emailkit_address_destination_form_validate(&$form) {
+  // If the address field has been filled in, check whether it is a valid e-mail address
   if (!empty($form['address']['#value']) && !valid_email_address($form['address']['#value'])) {
     form_error($form['address'], t('E-mail address is not a valid e-mail address.'));
   }
 }
 
 /**
- * Implementation of hook_destination_dispatch() for the emailkit_address destination.
+ * Implementation of hook_dispatcher_send() for the emailkit_address dispatcher.
  */
-function emailkit_address_destination_dispatch($destination, $options) {
-  dsm($options);
+function emailkit_address_dispatcher_send($message, $destination, $destination_options) {
+  // Translate the emailkit_address options to more generic emailkit_recipients options
+  $options = array(
+    'recipients' => array(
+      array(
+        'address' => $destination_option['address'],
+      ),
+    ),
+  );
   
-  return TRUE;
+  // Resend the message
+  emailkit_send($message, 'emailkit_recipients', $options);
 }

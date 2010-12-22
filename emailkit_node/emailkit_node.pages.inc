@@ -38,7 +38,7 @@ function emailkit_node_email_form(&$form_state, $node) {
 function emailkit_node_email_form_submit($form, &$form_state) {
   $node = $form['#node'];
 
-  if (emailkit_destination_select_dispatch($form_state['values']['dest'])) {
+  if (emailkit_destination_select_send(NULL, $form_state['values']['dest'])) {
     drupal_set_message(t('E-mail was sent successfully.'));
   }
   else {

@@ -15,9 +15,14 @@ function emailkit_destination_select_process($element) {
     '#options' => array(),
   );
 
-  $destinations = emailkit_destinations();
+  // Add form elements for each exposed destination
+  $destinations = emailkit_destination_info();
   foreach ($destinations as $destination => $destination_info) {
-    $element['destination']['#options'][$destination] = $destination_info['name'];
+    if (!$destination_info['exposed']) {
+      continue;
+    }
+    
+    $element['destination']['#options'][$destination] = $destination_info['label'];
     $element['destination_form'][$destination] = emailkit_destination_form($destination);
   }
 
@@ -30,7 +35,7 @@ function emailkit_destination_select_process($element) {
 function emailkit_destination_select_after_build($element) {
   if (isset($element['#post']) && !empty($element['#post'])) {
     // Mark all destination forms as having been validated so they don't generate form errors, except for the selected destination
-    $selected_destination = $element['#value']['destination'];
+    $selected_destination = isset($element['#value']['destination']) ? $element['#value']['destination'] : NULL;
     foreach (element_children($element['destination_form']) as $destination) {
       if ($destination != $selected_destination) {
         _emailkit_element_set_validated($element['destination_form'][$destination]);
