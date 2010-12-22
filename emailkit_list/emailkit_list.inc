@@ -43,7 +43,7 @@ function emailkit_list_destination_form_submit($destination, $form_values) {
 /**
  * Implementation of hook_dispatcher_send() for the emailkit_list dispatcher.
  */
-function emailkit_list_dispatcher_send($message, $destination, $destination_options) {
+function emailkit_list_dispatcher_send($dispatcher, $message, $destination, $destination_options) {
   module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
   
   // Translate the emailkit_list options to more generic emailkit_default options

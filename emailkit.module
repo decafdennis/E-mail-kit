@@ -225,12 +225,112 @@ function emailkit_destination_form($destination) {
 }
 
 /**
+ * Finds and returns the name of the dispatcher for the destination with the given name.
+ */
+function emailkit_destination_dispatcher($destination) {
+  $result = NULL;
+  
+  // Find the first dispatcher that services this destination
+  // TODO: Allow the user to configure the dispatcher if there is more than one for a destination
+  $dispatchers = emailkit_dispatcher_info();
+  foreach ($dispatchers as $dispatcher => $dispatcher_info) {
+    if (in_array($destination, $dispatcher_info['destinations'])) {
+      $result = $dispatcher;
+      break;
+    }
+  }
+  
+  return $result;
+}
+
+/**
+ * Returns all available dispatchers.
+ *
+ * @return An array of dispatcher information keyed by dispatcher name.
+ *
+ * @see hook_emailkit_dispatcher_info()
+ */
+function emailkit_dispatcher_info($reset = FALSE) {
+  static $info = NULL;
+  
+  // Do we need to (re)load the cache?
+  if (!isset($info) || $reset) {
+    $info = array();
+    
+    // Invoke hook_emailkit_dispatcher_info() on all modules that implement it
+    foreach (module_implements('emailkit_dispatcher_info') as $module) {
+      $module_info = call_user_func($module . '_emailkit_dispatcher_info');
+      
+      foreach ($module_info as $dispatcher_name => $dispatcher_info) {
+        // Set defaults
+        $dispatcher_info += array(
+          'label' => t('(Unlabeled)'),
+          'destinations' => array(),
+          'file' => NULL,
+          'base' => $dispatcher_name,
+        );
+
+        // Determine the full path to the include file, if necessary
+        if (isset($dispatcher_info['file'])) {
+          $dispatcher_info['include file'] = drupal_get_path('module', $module) . '/' . $dispatcher_info['file'];
+        }
+        
+        $info[$dispatcher_name] = $dispatcher_info;
+      }
+    }
+  }
+
+  return $info;
+}
+
+/**
+ * Invokes the given hook for the given dispatcher.
+ *
+ * @param $hook A string indicating the name of the hook, excluding the 'dispatcher' prefix. Example: send
+ * @param $dispatcher A string indicating the name of the dispatcher.
+ *
+ * @return Whatever is returned by the hook, or NULL if the hook is not implemented.
+ */
+function _emailkit_dispatcher_invoke($hook, $dispatcher) {
+  $info = emailkit_dispatcher_info();
+  if (!isset($info[$dispatcher])) {
+    trigger_error(sprintf('Dispatcher does not exist: %s', $dispatcher), E_USER_ERROR);
+    return NULL;
+  }
+  
+  $dispatcher_info = $info[$dispatcher];
+
+  // Load the include file, if necessary
+  if (isset($dispatcher_info['include file'])) {
+    require_once($dispatcher_info['include file']);
+  }
+
+  // Call the function, if it exists
+  $function = $dispatcher_info['base'] . '_dispatcher_' . $hook;
+  if (function_exists($function)) {
+    // Pass on all arguments, except the $hook argument
+    $args = func_get_args();
+    array_shift($args);
+    
+    return call_user_func_array($function, $args);
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
  * Sends the given message to the given destination.
  */
 function emailkit_send($message, $destination, $destination_options) {
-  // TODO: Find dispatcher
-  // TODO: Call hook_dispatcher_send() on dispatcher
-  drupal_set_message("TODO: Send message to $destination with options " . print_r($destination_options, TRUE));
+  // Find dispatcher
+  $dispatcher = emailkit_destination_dispatcher($destination);
+  if (!isset($dispatcher)) {
+    trigger_error(sprintf('No dispatcher for destination: %s', $destination), E_USER_ERROR);
+    return NULL;
+  }
+  
+  _emailkit_dispatcher_invoke('send', $dispatcher, $message, $destination, $destination_options);
 }
 
 /**

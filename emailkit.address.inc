@@ -31,12 +31,12 @@ function emailkit_address_destination_form_validate(&$form) {
 /**
  * Implementation of hook_dispatcher_send() for the emailkit_address dispatcher.
  */
-function emailkit_address_dispatcher_send($message, $destination, $destination_options) {
+function emailkit_address_dispatcher_send($dispatcher, $message, $destination, $destination_options) {
   // Translate the emailkit_address options to more generic emailkit_default options
   $options = array(
     'recipients' => array(
       array(
-        'address' => $destination_option['address'],
+        'address' => $destination_options['address'],
       ),
     ),
   );
