@@ -46,7 +46,7 @@ function emailkit_list_destination_form_submit($destination, $form_values) {
 function emailkit_list_dispatcher_send($message, $destination, $destination_options) {
   module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
   
-  // Translate the emailkit_list options to more generic emailkit_recipients options
+  // Translate the emailkit_list options to more generic emailkit_default options
   $options = array();
   
   $recipients = array();
@@ -62,5 +62,5 @@ function emailkit_list_dispatcher_send($message, $destination, $destination_opti
   $options['recipients'] = $recipients;
 
   // Resend the message
-  emailkit_send($message, 'emailkit_recipients', $options);
+  emailkit_send($message, 'emailkit_default', $options);
 }

@@ -196,7 +196,7 @@ function emailkit_list_emailkit_dispatcher_info() {
   $info = array();
 
   $info['emailkit_list'] = array(
-    'name' => t('Readdress as a generic list of recipients'),
+    'name' => t('Readdress as a generic e-mail destination'),
     'destinations' => array('emailkit_list'),
     'file' => 'emailkit_list.inc',
   );

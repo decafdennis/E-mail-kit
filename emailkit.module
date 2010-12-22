@@ -73,8 +73,8 @@ function emailkit_emailkit_destination_info() {
   $destinations = array();
   
   // Generic destination type
-  $info['emailkit_recipients'] = array(
-    'label' => t('Generic list of recipients'),
+  $info['emailkit_default'] = array(
+    'label' => t('Generic e-mail destination'),
   );
   
   // Single e-mail address destination type
@@ -94,15 +94,15 @@ function emailkit_emailkit_dispatcher_info() {
   $info = array();
   
   // Default message dispatcher which services the default destination type
-  $info['emailkit_drupal'] = array(
+  $info['emailkit_default'] = array(
     'label' => t('Drupal'),
-    'destinations' => array('emailkit_recipients'),
-    'file' => 'emailkit.drupal_dispatcher.inc',
+    'destinations' => array('emailkit_default'),
+    'file' => 'emailkit.default.inc',
   );
   
   // Dispatcher which services textual e-mail addresses, by forwarding them to the default message dispatcher
   $info['emailkit_address'] = array(
-    'label' => t('Readdress as a generic list of recipients'),
+    'label' => t('Readdress as generic e-mail destination'),
     'destinations' => array('emailkit_address'),
     'file' => 'emailkit.address.inc',
   );
