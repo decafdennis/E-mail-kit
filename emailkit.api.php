@@ -2,49 +2,49 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
- * Returns the destinations defined by this module.
+ * Returns the destination types defined by this module.
  *
- * Destinations represent an addressing domain. For example:
- * - e-mail addresses,
+ * A destination type represents an addressing domain. For example, the domain of:
+ * - e-mail addresses, or the domain of
  * - e-mail lists defined in some external system.
  *
- * Destinations can be exposed to the user. If a destination is not exposed, it can only be used internally. However, if a destination is exposed, then the user can configure it and send a message to it. For example, the e-mail address destination might allow the user to enter an e-mail address and then send a message to that address.
+ * Destination types can be exposed to the user. If a destination type is not exposed, it can only be used internally. However, if a destination type is exposed, then the user can use it to specify a concrete destination and send a message to it. For example, the e-mail address destination type might allow the user to enter an e-mail address in order to send a message to that address.
  *
  * This is a module-level hook. Implementation is optional.
  *
- * @return An array of destination information keyed by destination name. Destination information is a subarray with the following attributes:
- *   label: The human-readable name of the destination. Capitalize and wrap in t(). Required.
- *   exposed: Flag indicating whether the destination is exposed to the user for sending. Optional. Defaults to FALSE.
- *   file: The file that needs to be included when invoking destination hooks. Optional.
- *   base: The base for destination hooks. Optional. Defaults to the destination name.
+ * @return An array of destination type information keyed by destination type name. Destination type information is a subarray with the following attributes:
+ *   #label: The human-readable name of the destination type. Capitalize and wrap in t(). Required.
+ *   #exposed: Flag indicating whether the destination type is exposed to the user for sending. Optional. Defaults to FALSE.
+ *   #file: The file that needs to be included when invoking destination type hooks. Optional.
+ *   #base: The base for destination type hooks. Optional. Defaults to the destination type name.
  */
 function hook_emailkit_destination_info() {
   $info = array();
 
-  $info['my_module_address'] = array(
-    'label' => t('My module address'),
-    'exposed' => TRUE,
-    'file' => 'my_module.address_destination.inc',
+  $info['my_module_room'] = array(
+    '#label' => t('Room'),
+    '#exposed' => TRUE,
+    '#file' => 'my_module.room.inc',
   );
 
   return $info;
 }
 
 /**
- * Returns the form for exposed destinations. This form allows the user to configure the destination.
+ * Returns the form for an exposed destination type. This form allows the user to specify a concrete destination.
  *
- * This is a destination-level hook. Implementation is optional.
+ * This is a destination type-level hook. Implementation is optional.
  *
- * @param $destination The name of the destination.
+ * @param $destination_type The name of the destination type.
  *
  * @return A form array.
  */
-function hook_destination_form($destination) {
+function hook_destination_form($destination_type) {
   $form = array();
 
-  $form['address'] = array(
+  $form['number'] = array(
     '#type' => 'textfield',
-    '#title' => t('Address ID'),
+    '#title' => t('Room number'),
     '#required' => TRUE,
   );
   
@@ -52,31 +52,28 @@ function hook_destination_form($destination) {
 }
 
 /**
- * Validates the form for exposed destinations (@see hook_destination_form()).
+ * Validates the form for an exposed destination type (@see hook_destination_form()).
  *
- * This is a destination-level hook. Implementation is optional. This hook will not be called if #element_validate was set in hook_destination_form().
+ * This is a destination type-level hook. Implementation is optional. This hook will not be called if #element_validate was set in hook_destination_form().
  *
- * @param &$form A form array. The name of the destination can be found in $form['#destination'], unless this value was set in hook_destination_form().
+ * @param &$form A form array. The name of the destination type can be found in $form['#destination_type'], unless this value was already set in hook_destination_form().
  */
 function hook_destination_form_validate(&$form) {
-  if (!empty($form['address']['#value']) && !is_numeric($form['address']['#value'])) {
-    form_error($form['address'], t('Address ID must be a number.'));
+  if (!empty($form['number']['#value']) && !is_numeric($form['number']['#value'])) {
+    form_error($form['number'], t('Room number must be numeric.'));
   }
 }
 
 /**
- * Submits the form for exposed destinations (@see hook_destination_form()). The purpose of this hook is to return an array of options that can be passed to the dispatcher.
+ * Submits the form for an exposed destination type (@see hook_destination_form()). The purpose of this hook is to extend the structured destination array with destination type-specific attributes.
  *
- * This is a destination-level hook. Implementation is optional. If this hook is not implemented, the form values will be used as options.
+ * This is a destination type-level hook. Implementation is optional.
  *
- * @param $destination The name of the destination.
+ * @param $destination The structured destination array, with just the #type attribute set.
  * @param $form_values The values submitted by the form.
- *
- * @return An array of options.
  */
-function hook_destination_form_submit($destination, $form_values) {
-  // TODO: Process form values into options
-  return $form_values;
+function hook_destination_form_submit(&$destination, $form_values) {
+  $destination['#number'] = $form_values['number'];
 }
 
 /**
@@ -84,23 +81,23 @@ function hook_destination_form_submit($destination, $form_values) {
  *
  * Dispatchers send a message to a destination.
  *
- * For each destination, there must be at least one dispatcher that services it. If there is more than one dispatcher for a given destination, then the user can choose which dispatcher is used.
+ * For each destination type, there must be at least one dispatcher that services it. If there is more than one dispatcher for a given destination type, then the user can choose which dispatcher is used.
  *
  * This is a module-level hook. Implementation is optional, but must usually be implemented if hook_emailkit_destination_info() is implemented.
  *
  * @return An array of dispatcher information keyed by dispatcher name. Dispatcher information is a subarray with the following attributes:
- *   label: The human-readable name of the dispatcher. Capitalize and wrap in t(). Required.
- *   destinations: An array of names of supported destinations. Required.
- *   file: The file that needs to be included when invoking dispatcher hooks. Optional.
- *   base: The base for dispatcher hooks. Optional. Defaults to the dispatcher name.
+ *   #label: The human-readable name of the dispatcher. Capitalize and wrap in t(). Required.
+ *   #destinations: An array of names of supported destination types. Required.
+ *   #file: The file that needs to be included when invoking dispatcher hooks. Optional.
+ *   #base: The base for dispatcher hooks. Optional. Defaults to the dispatcher name.
  */
 function hook_emailkit_dispatcher_info() {
   $info = array();
 
-  $info['my_module_dispatcher'] = array(
-    'label' => t('My module'),
-    'destinations' => array('my_module_address'),
-    'file' => 'my_module.dispatcher.inc',
+  $info['my_module_room'] = array(
+    '#label' => t('Delivery boy'),
+    '#destinations' => array('my_module_room'),
+    '#file' => 'my_module.room.inc',
   );
 
   return $info;
@@ -111,17 +108,11 @@ function hook_emailkit_dispatcher_info() {
  *
  * This is a dispatcher-level hook. Implementation is optional, but must be implemented if the dispatcher wants to do anything useful.
  *
- * @param $message The message to send. TODO: What is this?
- * @param $destination The name of the destination.
- * @param $destination_options An array of options for the destination depending on the destination.
+ * @param $message The structured message array.
+ * @param $destination The structured destination array, with at least the #type attribute set.
  *
- * @return An array with the following attributes:
- *   success: Flag indicating whether sending was successful. Required.
- *   error: Human-readable error message if sending was not successful. Capitalize and wrap in t(). Optional.
+ * @return Flag indicating whether sending was successful.
  */
-function hook_dispatcher_send($dispatcher, $message, $destination, $destination_options) {
-  return array(
-    'success' => FALSE,
-    'error' => t('Not implemented yet.'),
-  );
+function hook_dispatcher_send($dispatcher_name, $message, $destination) {
+  return FALSE;
 }

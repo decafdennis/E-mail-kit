@@ -2,9 +2,9 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
- * Implementation of hook_destination_form() for the emailkit_list destination.
+ * Implementation of hook_destination_form() for the emailkit_list destination type.
  */
-function emailkit_list_destination_form($destination) {
+function emailkit_list_destination_form($destination_type) {
   $form = array();
 
   // Get an array of e-mail lists
@@ -30,37 +30,33 @@ function emailkit_list_destination_form($destination) {
 }
 
 /**
- * Implementation of hook_destination_form_submit() for the emailkit_list destination.
+ * Implementation of hook_destination_form_submit() for the emailkit_list destination type.
  */
-function emailkit_list_destination_form_submit($destination, $form_values) {
-  $options = array();
-  
-  $options['lists'] = array_keys(array_filter($form_values['lists']));
-  
-  return $options;
+function emailkit_list_destination_form_submit(&$destination, $form_values) {
+  $destination['#lists'] = array_keys(array_filter($form_values['lists']));
 }
 
 /**
  * Implementation of hook_dispatcher_send() for the emailkit_list dispatcher.
  */
-function emailkit_list_dispatcher_send($dispatcher, $message, $destination, $destination_options) {
+function emailkit_list_dispatcher_send($dispatcher, $message, $destination) {
   module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
   
   // Translate the emailkit_list options to more generic emailkit_default options
-  $options = array();
-  
-  $recipients = array();
+  $destination = array(
+    '#type' => 'emailkit_default',
+    '#recipients' => array(),
+  );
+
   foreach ($destination_options['lists'] as $lid) {
     $list = EmailkitList::loadWithId($lid);
     
     // TODO: Add actual subscribers
-    $recipients[] = array(
+    $destination['#recipients'][] = array(
       'address' => 'emailkit_list_' . $lid . '@example.com',
     );
   }
   
-  $options['recipients'] = $recipients;
-
   // Resend the message
-  emailkit_send($message, 'emailkit_default', $options);
+  return emailkit_send($message, $destination);
 }

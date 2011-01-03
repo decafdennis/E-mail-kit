@@ -2,9 +2,9 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
- * Implementation of hook_destination_form() for the emailkit_address destination.
+ * Implementation of hook_destination_form() for the emailkit_address destination type.
  */
-function emailkit_address_destination_form($destination) {
+function emailkit_address_destination_form($destination_type) {
   $form = array();
   
   // Allow the user to enter an e-mail address
@@ -19,7 +19,7 @@ function emailkit_address_destination_form($destination) {
 }
 
 /**
- * Implementation of hook_destination_form_validate() for the emailkit_address destination.
+ * Implementation of hook_destination_form_validate() for the emailkit_address destination type.
  */
 function emailkit_address_destination_form_validate(&$form) {
   // If the address field has been filled in, check whether it is a valid e-mail address
@@ -29,18 +29,26 @@ function emailkit_address_destination_form_validate(&$form) {
 }
 
 /**
+ * Implementation of hook_destination_form_submit() for the emailkit_address destination type.
+ */
+function emailkit_address_destination_form_submit(&$destination, $form_values) {
+  $destination['#address'] = $form_values['address'];
+}
+
+/**
  * Implementation of hook_dispatcher_send() for the emailkit_address dispatcher.
  */
-function emailkit_address_dispatcher_send($dispatcher, $message, $destination, $destination_options) {
-  // Translate the emailkit_address options to more generic emailkit_default options
-  $options = array(
-    'recipients' => array(
+function emailkit_address_dispatcher_send($dispatcher, $message, $destination) {
+  // Translate the emailkit_address destination to the more generic emailkit_default destination
+  $destination = array(
+    '#type' => 'emailkit_default',
+    '#recipients' => array(
       array(
-        'address' => $destination_options['address'],
+        'address' => $destination['#address'],
       ),
     ),
   );
-  
+
   // Resend the message
-  emailkit_send($message, 'emailkit_default', $options);
+  return emailkit_send($message, $destination);
 }

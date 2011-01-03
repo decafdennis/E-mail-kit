@@ -8,7 +8,7 @@ function emailkit_destination_select_process($element) {
   $element['#tree'] = TRUE;
   $element['#theme'] = 'emailkit_destination_select_children';
 
-  $element['destination'] = array(
+  $element['destination_type'] = array(
     '#type' => 'radios',
     '#title' => $element['#title'],
     '#required' => $element['#required'],
@@ -17,13 +17,13 @@ function emailkit_destination_select_process($element) {
 
   // Add form elements for each exposed destination
   $destinations = emailkit_destination_info();
-  foreach ($destinations as $destination => $destination_info) {
-    if (!$destination_info['exposed']) {
+  foreach ($destinations as $destination_type => $destination_info) {
+    if (!$destination_info['#exposed']) {
       continue;
     }
     
-    $element['destination']['#options'][$destination] = $destination_info['label'];
-    $element['destination_form'][$destination] = emailkit_destination_form($destination);
+    $element['destination_type']['#options'][$destination_type] = $destination_info['#label'];
+    $element['destination_form'][$destination_type] = emailkit_destination_form($destination_type);
   }
 
   return $element;
@@ -35,10 +35,10 @@ function emailkit_destination_select_process($element) {
 function emailkit_destination_select_after_build($element) {
   if (isset($element['#post']) && !empty($element['#post'])) {
     // Mark all destination forms as having been validated so they don't generate form errors, except for the selected destination
-    $selected_destination = isset($element['#value']['destination']) ? $element['#value']['destination'] : NULL;
-    foreach (element_children($element['destination_form']) as $destination) {
-      if ($destination != $selected_destination) {
-        _emailkit_element_set_validated($element['destination_form'][$destination]);
+    $selected_destination_type = isset($element['#value']['destination_type']) ? $element['#value']['destination_type'] : NULL;
+    foreach (element_children($element['destination_form']) as $destination_type) {
+      if ($destination_type != $selected_destination_type) {
+        _emailkit_element_set_validated($element['destination_form'][$destination_type]);
       }
     }
   }
@@ -63,11 +63,11 @@ function theme_emailkit_destination_select_children($element) {
   $output = "";
 
   $output .= '<dl class="emailkit-destination-select-items">';
-  foreach ($element['destination']['#options'] as $key => $value) {
+  foreach ($element['destination_type']['#options'] as $key => $value) {
     $class = str_replace(array('][', '_', ' '), '-', $key);
     
     $output .= '<dt class="emailkit-destination-select-item-' . $class . '">';
-    $output .= drupal_render($element['destination'][$key]);
+    $output .= drupal_render($element['destination_type'][$key]);
     $output .= '</dt>';
 
     if (isset($element['destination_form'][$key])) {
