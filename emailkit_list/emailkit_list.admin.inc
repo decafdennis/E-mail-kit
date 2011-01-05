@@ -20,9 +20,7 @@ define('EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT', 50);
  * Returns the admin page that lists the e-mail lists.
  */
 function emailkit_list_admin_list() {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-
-  return drupal_get_form('emailkit_list_admin_list_form', EmailkitList::loadAll());
+  return drupal_get_form('emailkit_list_admin_list_form', emailkit_list_load_all());
 }
 
 /**
@@ -43,7 +41,7 @@ function emailkit_list_admin_list_form(&$form_state, $lists) {
     if ($weights) {
       $form['lists'][$lid]['weight'] = array(
         '#type' => 'weight',
-        '#default_value' => $list->getWeight(),
+        '#default_value' => $list->weight,
       );
     }
   }
@@ -67,9 +65,9 @@ function emailkit_list_admin_list_form_submit($form, &$form_state) {
     $list = $form['lists'][$lid]['#list'];
     
     // Update the list if necessary
-    if ($list_values['weight'] != $list->getWeight()) {
-      $list->setWeight($list_values['weight']);
-      $list->save();
+    if ($list_values['weight'] != $list->weight) {
+      $list->weight = $list_values['weight'];
+      emailkit_list_save($list);
     }
   }
 }
@@ -103,7 +101,7 @@ function emailkit_list_admin_form(&$form_state, $list = NULL) {
     '#type' => 'textfield',
     '#title' => t('Name'),
     '#description' => t('The name of the list.'),
-    '#default_value' => isset($list) ? $list->getName() : '',
+    '#default_value' => isset($list) ? $list->name : '',
     '#required' => TRUE,
   );
   
@@ -119,19 +117,19 @@ function emailkit_list_admin_form(&$form_state, $list = NULL) {
  * Handles submission of an e-mail list admin form.
  */
 function emailkit_list_admin_form_submit($form, &$form_state) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
-  // Update the existing list or create a new one
+  // Get the list
   if (isset($form['#list'])) {
     $list = $form['#list'];
-    $list->setName($form_state['values']['name']);
   }
   else {
-    $list = new EmailkitList($form_state['values']['name']);
+    $list = new stdClass();
   }
   
-  $result = $list->save();  
-  switch ($result) {
+  // Update the name
+  $list->name = $form_state['values']['name'];
+  
+  // Save the list
+  switch (emailkit_list_save($list)) {
     case SAVED_NEW;
       drupal_set_message(t('The list has been added.'));
       break;
@@ -160,11 +158,11 @@ function emailkit_list_admin_delete($list) {
  */
 function emailkit_list_admin_delete_confirm_form(&$form_state, $list) {
   $form = array(
-    '#list' => $list,
+    '#lid' => $list->lid,
   );
 
   return confirm_form($form,
-    t('Are you sure you want to delete %name?', array('%name' => $list->getName())),
+    t('Are you sure you want to delete %name?', array('%name' => $list->name)),
     isset($_GET['destination']) ? $_GET['destination'] : 'admin/emailkit/list/lists',
     t('All information about subscriptions to this e-mail list will be removed as well. This action cannot be undone.'),
     t('Delete'),
@@ -177,10 +175,7 @@ function emailkit_list_admin_delete_confirm_form(&$form_state, $list) {
  */
 function emailkit_list_admin_delete_confirm_form_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
-    $list = $form['#list'];
-    
-    $result = $list->delete();
-    if ($result) {
+    if (emailkit_list_delete($form['#lid'])) {
       drupal_set_message(t('The list has been deleted.'));
     }
     else {
@@ -268,12 +263,13 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     '#default_value' => isset($user) ? $user->name : '',
     '#description' => t('The username of the subscriber. Leave blank if this subscriber has no user account on the site.'),
   );
-  
-  $lists = EmailkitList::loadAll();
+
   $options = array();
+  $lists = emailkit_list_load_all();
   foreach ($lists as $lid => $list) {
-    $options[$lid] = $list->getName();
+    $options[$lid] = $list->name;
   }
+  
   if (empty($options)) {
     $form['subscriptions'] = array(
       '#type' => 'value',
@@ -445,7 +441,7 @@ function theme_emailkit_list_admin_list_form($form) {
   $weights = FALSE;
   foreach (element_children($form['lists']) as $lid) {
     $row = array();
-    $row[] = check_plain($form['lists'][$lid]['#list']->getName());
+    $row[] = check_plain($form['lists'][$lid]['#list']->name);
     $row[] = l(t('edit'), 'admin/emailkit/list/lists/' . $lid . '/edit', array('query' => drupal_get_destination()));
     $row[] = l(t('delete'), 'admin/emailkit/list/lists/' . $lid . '/delete', array('query' => drupal_get_destination()));
     

@@ -103,34 +103,6 @@ function emailkit_list_menu() {
 }
 
 /**
- * Function used as a page argument callback for the menu items for editing and deleting e-mail lists.
- */
-function emailkit_list_load($lid) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
-  if (is_numeric($lid)) {
-    return EmailkitList::loadWithId($lid);
-  }
-  else {
-    return NULL;
-  }
-}
-
-/**
- * Function used as a page argument callback for the menu items for editing and deleting subscribers.
- */
-function emailkit_list_subscriber_load($sid) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
-  if (is_numeric($sid)) {
-    return EmailkitListSubscriber::loadWithId($sid);
-  }
-  else {
-    return NULL;
-  }
-}
-
-/**
  * Implementation of hook_theme().
  */
 function emailkit_list_theme() {
@@ -202,6 +174,86 @@ function emailkit_list_emailkit_dispatcher_info() {
   );
   
   return $info;
+}
+
+/**
+ * Loads the list with the given identifier from the database.
+ *
+* @return A list, or NULL if it cannot be found.
+ */
+function emailkit_list_load($lid) {
+  return db_fetch_object(db_query("SELECT * FROM {emailkit_list} WHERE lid = %d", $lid));
+}
+
+/**
+ * Loads all lists from the database.
+ *
+ * @return An array of lists, keyed by their identifier and ordered by weight and name.
+ */
+function emailkit_list_load_all() {
+  $lists = array();
+  
+  $result = db_query("SELECT * FROM {emailkit_list} ORDER BY weight ASC, name ASC");
+  while ($list = db_fetch_object($result)) {
+    $lists[$list->lid] = $list;
+  }
+  
+  return $lists;
+}
+
+/**
+ * Saves the given list to the database, inserting a new record or updating an existing record as necessary.
+ *
+ * @return Returns FALSE, SAVED_NEW or SAVED_UPDATED depending on whether saving was successful. Upon return, a new list will automatically have an identifier assigned to it.
+ */
+function emailkit_list_save(&$list) {
+  if (isset($list->lid)) {
+    db_query("UPDATE {emailkit_list} SET name = '%s', weight = %d WHERE lid = %d", $list->name, $list->weight, $list->lid);
+    
+    if (db_affected_rows() == 1) {
+      return SAVED_UPDATED;
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
+    db_query("INSERT INTO {emailkit_list} (name, weight) VALUES ('%s', %d)", $list->name, $list->weight);
+
+    if (db_affected_rows() == 1) {
+      $list->lid = db_last_insert_id('emailkit_list', 'lid');
+      
+      return SAVED_NEW;
+    }
+    else {
+      return FALSE;
+    }
+  }
+}
+
+/**
+ * Deletes the list with the given identifier from the database.
+ *
+ * @return A flag indicating whether the list was deleted.
+ */
+function emailkit_list_delete($lid) {
+  db_query("DELETE FROM {emailkit_list} WHERE lid = %d", $lid);
+  
+  if (db_affected_rows() == 1) {
+    db_query("DELETE FROM {emailkit_list_subscription} WHERE lid = %d", $lid);
+    
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Loads the subscriber with the given identifier from the database.
+ */
+function emailkit_list_subscriber_load($sid) {
+  return db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE sid = %d", $sid));
 }
 
 /**

@@ -7,14 +7,11 @@
 function emailkit_list_destination_form($destination_type) {
   $form = array();
 
-  // Get an array of e-mail lists
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  $lists = EmailkitList::loadAll();  
-  
   // Build an array of options
   $options = array();
+  $lists = emailkit_list_load_all();
   foreach ($lists as $lid => $list) {
-    $options[$lid] = $list->getName();
+    $options[$lid] = $list->name;
   }
 
   $form['lists'] = array(
@@ -49,7 +46,7 @@ function emailkit_list_dispatcher_send($dispatcher, $message, $destination) {
   );
 
   foreach ($destination_options['lists'] as $lid) {
-    $list = EmailkitList::loadWithId($lid);
+    $list = emailkit_list_load($lid);
     
     // TODO: Add actual subscribers
     $destination['#recipients'][] = array(
