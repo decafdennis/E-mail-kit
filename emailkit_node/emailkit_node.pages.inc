@@ -40,8 +40,8 @@ function emailkit_node_email_form_submit($form, &$form_state) {
   $message = array(
     '#subject' => $node->title,
     '#body' => array(
-      'stuff' => array(
-        '#value' => 'Stuff',
+      'node' => array(
+        '#value' => $node->teaser,
       ),
     ),
   );
