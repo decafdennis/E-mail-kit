@@ -25,6 +25,14 @@ function emailkit_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   );
+
+  $items['admin/emailkit/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Control general e-mail sending behavior.',
+    'page callback' => 'emailkit_admin_settings',
+    'access arguments' => array('administer e-mail kit'),
+    'file' => 'emailkit.admin.inc',
+  );
   
   return $items;
 }
@@ -95,14 +103,14 @@ function emailkit_emailkit_dispatcher_info() {
   
   // Default message dispatcher, which services the default destination type
   $info['emailkit_default'] = array(
-    '#label' => t('Drupal'),
+    '#label' => t('Drupal (default)'),
     '#destinations' => array('emailkit_default'),
     '#file' => 'emailkit.default.inc',
   );
   
   // Dispatcher that services textual e-mail addresses, by forwarding them to the default message dispatcher
   $info['emailkit_address'] = array(
-    '#label' => t('Readdress as generic e-mail destination'),
+    '#label' => t('Readdress as a generic e-mail destination (default)'),
     '#destinations' => array('emailkit_address'),
     '#file' => 'emailkit.address.inc',
   );
@@ -191,20 +199,31 @@ function emailkit_destination_dispatcher($type) {
   if (!isset($type)) {
     return NULL;
   }
-  
-  $result = NULL;
-  
-  // Find the first dispatcher that services this destination
-  // TODO: Allow the user to configure the dispatcher if there is more than one for a destination
+
+  // Find all dispatchers that service this destination
+  $potential_dispatcher_names = array();
   $dispatchers = emailkit_dispatcher_info();
   foreach ($dispatchers as $dispatcher_name => $dispatcher_info) {
     if (in_array($type, $dispatcher_info['#destinations'])) {
-      $result = $dispatcher_name;
-      break;
+      $potential_dispatcher_names[] = $dispatcher_name;
     }
   }
   
-  return $result;
+  if (empty($potential_dispatcher_names)) {
+    return NULL;
+  }
+  
+  // Check if we have a configured dispatcher
+  $configured_dispatcher_name = variable_get('emailkit_destination_dispatcher_' . $type, NULL);
+
+  // If the configured dispatcher is sound, return it
+  if (isset($configured_dispatcher_name) && in_array($configured_dispatcher_name, $potential_dispatcher_names)) {
+    return $configured_dispatcher_name;
+  }
+  // Otherwise, return the first dispatcher we found
+  else {
+    return array_shift($potential_dispatcher_names);
+  }
 }
 
 /**
