@@ -5,9 +5,7 @@
  * Returns the form elements that should be injected into the user profile form.
  */
 function emailkit_list_user_form($user) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
-  $lists = EmailkitList::loadAll();
+  $lists = emailkit_list_load_all();
   if (empty($lists)) {
     return array();
   }
@@ -24,13 +22,15 @@ function emailkit_list_user_form($user) {
 
   $options = array();
   foreach ($lists as $lid => $list) {
-    $options[$lid] = $list->getName();
+    $options[$lid] = $list->name;
   }
-  $subscriber = EmailkitListSubscriber::loadWithUserId($user->uid);
+  
+  $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
+  
   $form['emailkit_list_subscriptions']['subscriptions'] = array(
     '#type' => 'checkboxes',
     '#options' => $options,
-    '#default_value' => isset($subscriber) ? $subscriber->getSubscriptionListIds() : array(),
+    '#default_value' => isset($subscriber) ? emailkit_list_subscriber_load_subscriptions($subscriber->sid) : array(),
   );
   
   return $form;
@@ -41,13 +41,20 @@ function emailkit_list_user_form($user) {
  */
 function emailkit_list_user_form_submit($user, &$values) {
   if (isset($values['emailkit_list_subscriptions'])) {
-    $subscriber = EmailkitListSubscriber::loadWithUserId($user->uid);
+    $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
 
     if (!isset($subscriber)) {
-      $subscriber = new EmailkitListSubscriber($user->mail, $user->uid);
+      $subscriber = new stdClass();
+      $subscriber->mail = $user->mail;
+      $subscriber->uid = $user->uid;
+      emailkit_list_subscriber_save($subscriber);
     }
-    $subscriber->setSubscriptionListIds(array_keys(array_filter($values['emailkit_list_subscriptions']['subscriptions'])));
-    $subscriber->save();
+    
+    $subscriptions = array_keys(array_filter($values['emailkit_list_subscriptions']['subscriptions']));
+    
+    if (!emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
+      drupal_set_message(t('Your subscriptions could not be saved.'), 'warning');
+    }
     
     unset($values['emailkit_list_subscriptions']);
   }

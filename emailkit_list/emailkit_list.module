@@ -257,6 +257,160 @@ function emailkit_list_subscriber_load($sid) {
 }
 
 /**
+ * Loads the subscriber with the given address from the database.
+ */
+function emailkit_list_subscriber_load_by_address($address) {
+  return db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE address = '%s'", $address));
+}
+
+/**
+ * Loads the subscriber with the given user identifier from the database.
+ */
+function emailkit_list_subscriber_load_by_user($uid) {
+  return db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE uid = %d", $uid));
+}
+
+/**
+ * Loads all subscribers from the database.
+ *
+ * @return An array of subscribers, keyed and ordered by their unique identifier.
+ */
+function emailkit_list_subscriber_load_all($tablesort_header = NULL, $pager_limit = NULL, $pager_element = 0) {
+  $subscribers = array();
+  
+  // Build the SQL query
+  $sql = "SELECT * FROM {emailkit_list_subscriber}";
+  if (isset($tablesort_header)) {
+    $sql .= tablesort_sql($tablesort_header);
+  }
+  else {
+    $sql .= " ORDER BY sid ASC";
+  }
+
+  // Run the SQL query
+  if (isset($pager_limit) && isset($pager_element)) {
+    $result = pager_query($sql, $pager_limit, $pager_element);
+  }
+  else {
+    $result = db_query($sql);
+  }
+  
+  while ($subscriber = db_fetch_object($result)) {
+    $subscribers[$subscriber->sid] = $subscriber;
+  }
+  
+  return $subscribers;
+}
+
+/**
+ * Loads the subscriptions of the given subscriber.
+ *
+ * @param $sid The identifier of the subscriber.
+ *
+ * @return An array of list identifiers.
+ */
+function emailkit_list_subscriber_load_subscriptions($sid) {
+  $lids = array();
+  
+  $result = db_query("SELECT lid FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
+  while ($lid = db_result($result)) {
+    $lids[] = $lid;
+  }
+  
+  return $lids;
+}
+
+/**
+ * Saves the given subscriber to the database, inserting a new record or updating an existing record as necessary.
+ *
+ * @return Returns FALSE, SAVED_NEW or SAVED_UPDATED depending on whether saving was successful. Upon return, a new subscriber will automatically have an identifier assigned to it.
+ */
+function emailkit_list_subscriber_save(&$subscriber) {
+  if (isset($subscriber->sid)) {
+    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', uid = %d WHERE sid = %d", $subscriber->address, $subscriber->uid, $subscriber->sid);
+    
+    if (db_affected_rows() == 1) {
+      return SAVED_UPDATED;
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
+    db_query("INSERT INTO {emailkit_list_subscriber} (address, uid) VALUES ('%s', %d)", $subscriber->address, $subscriber->uid);
+
+    if (db_affected_rows() == 1) {
+      $subscriber->sid = db_last_insert_id('emailkit_list_subscriber', 'sid');
+      
+      return SAVED_NEW;
+    }
+    else {
+      return FALSE;
+    }
+  }
+}
+
+/**
+ * Saves the subscriptions of the given subscriber. 
+ *
+ * @param $sid The identifier of the subscriber.
+ * @param $lids An array of list identifiers.
+ *
+ * @return A flag indicating whether saving was successful.
+ */
+function emailkit_list_subscriber_save_subscriptions($sid, $lids) {
+  db_query("DELETE FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
+  
+  if (!empty($lids)) {
+    // Start constructing a compound insertion statement
+    $sql = "INSERT INTO {emailkit_list_subscription} (sid, lid) VALUES ";
+    $sql_args = array();
+    $insertions = 0;
+    
+    foreach ($lids as $lid) {
+      $sql .= "(%d, %d), ";
+      $sql_args[] = $sid;
+      $sql_args[] = $lid;
+      $insertions++;
+    }
+    
+    // Remove the final comma delimiter
+    $sql = substr($sql, 0, -2);
+    
+    db_query($sql, $sql_args);
+    
+    // Verify the number of affected rows
+    if (db_affected_rows() == $insertions) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
+ * Deletes the subscriber with the given identifier from the database.
+ *
+ * @return A flag indicating whether the subscriber was deleted.
+ */
+function emailkit_list_subscriber_delete($sid) {
+  db_query("DELETE FROM {emailkit_list_subscriber} WHERE sid = %d", $sid);
+  
+  if (db_affected_rows() == 1) {
+    db_query("DELETE FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
+    
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
  * Private function that adds a class to a form element.
  */
 function _emailkit_list_element_add_class(&$element, $class) {

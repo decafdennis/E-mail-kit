@@ -197,17 +197,15 @@ function emailkit_list_admin_subscriber_list() {
  * Returns the subscribers admin form.
  */
 function emailkit_list_admin_subscriber_list_form(&$form_state) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
   $form = array();
   
   $header = array(
     array('data' => t('E-mail address'), 'field' => 'address'),
     array('data' => t('User account'), 'field' => 'uid'),
   );
-  $subscribers = EmailkitListSubscriber::loadAll($header, EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT);
-  
+
   $form['subscribers'] = array();
+  $subscribers = emailkit_list_subscriber_load_all($header, EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT);
   foreach ($subscribers as $sid => $subscriber) {
     $form['subscribers'][$sid]['#subscriber'] = $subscriber;
   }
@@ -235,8 +233,6 @@ function emailkit_list_admin_subscriber_edit($subscriber) {
  * Returns a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
   $form = array();
   
   // New, or existing list?
@@ -248,12 +244,12 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     '#type' => 'textfield',
     '#title' => t('E-mail address'),
     '#description' => t('The e-mail address of the subscriber.'),
-    '#default_value' => isset($subscriber) ? $subscriber->getAddress() : '',
+    '#default_value' => isset($subscriber) ? $subscriber->address : '',
     '#required' => TRUE,
   );
   
   if (isset($subscriber)) {
-    $user = $subscriber->getUser();
+    $user = user_load($subscriber->uid);
   }
   $form['username'] = array(
     '#type' => 'textfield',
@@ -287,7 +283,7 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
       '#type' => 'checkboxes',
       '#title' => t('Subscriptions'),
       '#options' => $options,
-      '#default_value' => isset($subscriber) ? $subscriber->getSubscriptionListIds() : array(),
+      '#default_value' => isset($subscriber) ? emailkit_list_subscriber_load_subscriptions($subscriber->sid) : array(),
       '#description' => t('Select the lists to which the subscriber is subscribed to.'),
     );
   }
@@ -312,11 +308,9 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
       form_set_error('address', t('E-mail address is invalid.'));
     }
     else {
-      module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-      
       // Check whether the e-mail address is already associated with a different subscriber
-      $address_subscriber = EmailkitListSubscriber::loadWithAddress($address);
-      if ($address_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->getId() == $address_subscriber->getId())) {
+      $address_subscriber = emailkit_list_subscriber_load_by_address($address);
+      if ($address_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->sid == $address_subscriber->sid)) {
         form_set_error('address', t('The e-mail address %address is already associated with another subscriber.', array('%address' => $address)));
       }
     }
@@ -329,11 +323,9 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
       form_set_error('username', t('The user account %username does not exist.', array('%username' => $form_state['values']['username'])));
     }
     else {
-      module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-      
       // Check whether the user account is already associated with a different subscriber
-      $user_subscriber = EmailkitListSubscriber::loadWithUserId($user->uid);
-      if ($user_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->getId() == $user_subscriber->getId())) {
+      $user_subscriber = emailkit_list_subscriber_load_by_user($user->uid);
+      if ($user_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->sid == $user_subscriber->sid)) {
         form_set_error('username', t('The user account %username is already associated with another subscriber.', array('%username' => $form_state['values']['username'])));
       }
     }
@@ -344,8 +336,6 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
  * Handles submission of a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
-  module_load_include('inc', 'emailkit_list', 'emailkit_list.model');
-  
   // Determine the entered user ID
   if (!empty($form_state['values']['username']) && ($user = user_load(array('name' => $form_state['values']['username'])))) {
     $uid = $user->uid;
@@ -357,16 +347,14 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
   // Update the existing list or create a new one
   if (isset($form['#subscriber'])) {
     $subscriber = $form['#subscriber'];
-    $subscriber->setAddress($form_state['values']['address']);
-    $subscriber->setUserId($uid);
   }
   else {
-    $subscriber = new EmailkitListSubscriber($form_state['values']['address'], $uid);
+    $subscriber = new stdClass();
   }
-  $subscriber->setSubscriptionListIds(array_keys(array_filter($form_state['values']['subscriptions'])));
-  
-  $result = $subscriber->save();  
-  switch ($result) {
+  $subscriber->address = $form_state['values']['address'];
+  $subscriber->uid = $uid;
+
+  switch (emailkit_list_subscriber_save($subscriber)) {
     case SAVED_NEW;
       drupal_set_message(t('The subscriber has been added.'));
       break;
@@ -378,6 +366,13 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
     default:
       drupal_set_message(t('The subscriber could not be saved.'), 'error');
       break;
+  }
+
+  // Update the subscriptions
+  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
+  
+  if (!emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
+    drupal_set_message(t('The subscriber\'s subscriptions could not be saved.'), 'warning');
   }
   
   $form_state['redirect'] = 'admin/emailkit/list/subscribers';
@@ -395,11 +390,11 @@ function emailkit_list_admin_subscriber_delete($subscriber) {
  */
 function emailkit_list_admin_subscriber_delete_confirm_form(&$form_state, $subscriber) {
   $form = array(
-    '#subscriber' => $subscriber,
+    '#sid' => $subscriber->sid,
   );
 
   return confirm_form($form,
-    t('Are you sure you want to delete %address?', array('%address' => $subscriber->getAddress())),
+    t('Are you sure you want to delete %address?', array('%address' => $subscriber->address)),
     isset($_GET['destination']) ? $_GET['destination'] : 'admin/emailkit/list/subscribers',
     t('This action cannot be undone.'),
     t('Delete'),
@@ -412,10 +407,7 @@ function emailkit_list_admin_subscriber_delete_confirm_form(&$form_state, $subsc
  */
 function emailkit_list_admin_subscriber_delete_confirm_form_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
-    $subscriber = $form['#subscriber'];
-    
-    $result = $subscriber->delete();
-    if ($result) {
+    if (emailkit_list_subscriber_delete($form['#sid'])) {
       drupal_set_message(t('The subscriber has been deleted.'));
     }
     else {
@@ -496,8 +488,8 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
     $subscriber = $form['subscribers'][$sid]['#subscriber'];
     
     $row = array();
-    $row[] = check_plain($subscriber->getAddress());
-    $row[] = theme('username', $subscriber->getUser());
+    $row[] = check_plain($subscriber->address);
+    $row[] = theme('username', user_load($subscriber->uid));
     $row[] = l(t('edit'), 'admin/emailkit/list/subscribers/' . $sid . '/edit', array('query' => drupal_get_destination()));
     $row[] = l(t('delete'), 'admin/emailkit/list/subscribers/' . $sid . '/delete', array('query' => drupal_get_destination()));
     $rows[] = $row;
