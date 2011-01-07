@@ -202,6 +202,24 @@ function emailkit_list_load_all() {
 }
 
 /**
+ * Loads all subscribers that are subscribed to the given list from the database.
+ *
+ * @param $lid The identifier of the list.
+ *
+ * @return An array of subscribers, keyed and ordered by their unique identifier.
+ */
+function emailkit_list_load_subscribers($lid) {
+  $subscribers = array();
+  
+  $result = db_query("SELECT sr.* FROM {emailkit_list_subscriber} sr INNER JOIN {emailkit_list_subscription} sn ON sr.sid = sn.sid WHERE sn.lid = %d", $lid);
+  while ($subscriber = db_fetch_object($result)) {
+    $subscribers[$subscriber->sid] = $subscriber;
+  }
+  
+  return $subscribers;
+}
+
+/**
  * Saves the given list to the database, inserting a new record or updating an existing record as necessary.
  *
  * @return Returns FALSE, SAVED_NEW or SAVED_UPDATED depending on whether saving was successful. Upon return, a new list will automatically have an identifier assigned to it.

@@ -14,7 +14,7 @@ function emailkit_list_destination_form($destination_type) {
     $options[$lid] = $list->name;
   }
 
-  $form['lists'] = array(
+  $form['lids'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Lists'),
     '#options' => $options,
@@ -30,26 +30,29 @@ function emailkit_list_destination_form($destination_type) {
  * Implementation of hook_destination_form_submit() for the emailkit_list destination type.
  */
 function emailkit_list_destination_form_submit(&$destination, $form_values) {
-  $destination['#lists'] = array_keys(array_filter($form_values['lists']));
+  $destination['#lids'] = array_keys(array_filter($form_values['lids']));
 }
 
 /**
  * Implementation of hook_dispatcher_send() for the emailkit_list dispatcher.
  */
 function emailkit_list_dispatcher_send($dispatcher, $message, $destination) {
-  // Translate the emailkit_list options to more generic emailkit_default options
+  $lids = $destination['#lids'];
+  
+  // Translate the emailkit_list destination to the more generic emailkit_default destination
   $destination = array(
     '#type' => 'emailkit_default',
     '#recipients' => array(),
   );
 
-  foreach ($destination_options['lists'] as $lid) {
-    $list = emailkit_list_load($lid);
-    
-    // TODO: Add actual subscribers
-    $destination['#recipients'][] = array(
-      'address' => 'emailkit_list_' . $lid . '@example.com',
-    );
+  foreach ($lids as $lid) {
+    // Add all subscribers to the list of recipients
+    $subscribers = emailkit_list_load_subscribers($lid);
+    foreach ($subscribers as $subscriber) {
+      $destination['#recipients'][] = array(
+        'address' => $subscriber->address,
+      );
+    }
   }
   
   // Resend the message
