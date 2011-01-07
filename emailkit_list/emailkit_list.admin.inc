@@ -122,7 +122,7 @@ function emailkit_list_admin_form_submit($form, &$form_state) {
     $list = $form['#list'];
   }
   else {
-    $list = new stdClass();
+    $list = emailkit_list_new();
   }
   
   // Update the name
@@ -349,7 +349,7 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
     $subscriber = $form['#subscriber'];
   }
   else {
-    $subscriber = new stdClass();
+    $subscriber = emailkit_list_subscriber_new();
   }
   $subscriber->address = $form_state['values']['address'];
   $subscriber->uid = $uid;

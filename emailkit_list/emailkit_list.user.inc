@@ -44,8 +44,8 @@ function emailkit_list_user_form_submit($user, &$values) {
     $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
 
     if (!isset($subscriber)) {
-      $subscriber = new stdClass();
-      $subscriber->mail = $user->mail;
+      $subscriber = emailkit_list_subscriber_new();
+      $subscriber->address = $user->mail;
       $subscriber->uid = $user->uid;
       emailkit_list_subscriber_save($subscriber);
     }

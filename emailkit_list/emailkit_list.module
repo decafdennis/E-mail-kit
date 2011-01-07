@@ -177,6 +177,16 @@ function emailkit_list_emailkit_dispatcher_info() {
 }
 
 /**
+ * Returns a new unsaved list with default values.
+ */
+function emailkit_list_new() {
+  $list = new stdClass();
+  $list->name = "";
+  $list->weight = 0;
+  return $list;
+}
+
+/**
  * Loads the list with the given identifier from the database.
  *
 * @return A list, or NULL if it cannot be found.
@@ -265,6 +275,16 @@ function emailkit_list_delete($lid) {
   else {
     return FALSE;
   }
+}
+
+/**
+ * Returns a new unsaved subscriber with default values.
+ */
+function emailkit_list_subscriber_new() {
+  $subscriber = new stdClass();
+  $subscriber->address = "";
+  $subscriber->uid = 0;
+  return $subscriber;
 }
 
 /**
