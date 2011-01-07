@@ -147,6 +147,29 @@ function emailkit_list_user($op, &$edit, &$account, $category = NULL) {
 }
 
 /**
+ * Implementation of hook_block().
+ */
+function emailkit_list_block($op = 'list', $delta = 0, $edit = array()) {
+  switch ($op) {
+    case 'list':
+      $blocks = array();
+      
+      $blocks['subscriptions'] = array(
+        'info' => t('E-mail list subscriptions'),
+        'cache' => BLOCK_CACHE_PER_ROLE | BLOCK_CACHE_PER_PAGE,
+      );
+      
+      return $blocks;
+      
+    case 'view':
+      // Include the appropriate file and pass on the message, to keep the main module file lean
+      module_load_include('inc', 'emailkit_list', 'emailkit_list.block');
+      
+      return emailkit_list_block_subscriptions_view();
+  }
+}
+
+/**
  * Implementation of hook_emailkit_destination_info().
  */
 function emailkit_list_emailkit_destination_info() {
@@ -192,7 +215,9 @@ function emailkit_list_new() {
 * @return A list, or NULL if it cannot be found.
  */
 function emailkit_list_load($lid) {
-  return db_fetch_object(db_query("SELECT * FROM {emailkit_list} WHERE lid = %d", $lid));
+  if ($list = db_fetch_object(db_query("SELECT * FROM {emailkit_list} WHERE lid = %d", $lid))) {
+    return $list;
+  }
 }
 
 /**
@@ -289,23 +314,35 @@ function emailkit_list_subscriber_new() {
 
 /**
  * Loads the subscriber with the given identifier from the database.
+ *
+ * @return A subscriber object or NULL.
  */
 function emailkit_list_subscriber_load($sid) {
-  return db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE sid = %d", $sid));
+  if ($subscriber = db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE sid = %d", $sid))) {
+    return $subscriber;
+  }
 }
 
 /**
  * Loads the subscriber with the given address from the database.
+ *
+ * @return A subscriber object or NULL.
  */
 function emailkit_list_subscriber_load_by_address($address) {
-  return db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE address = '%s'", $address));
+  if ($subscriber = db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE address = '%s'", $address))) {
+    return $subscriber;
+  }
 }
 
 /**
  * Loads the subscriber with the given user identifier from the database.
+ *
+ * @return A subscriber object or NULL.
  */
 function emailkit_list_subscriber_load_by_user($uid) {
-  return db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE uid = %d", $uid));
+  if ($subscriber = db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE uid = %d", $uid))) {
+    return $subscriber;
+  }
 }
 
 /**
