@@ -2,6 +2,11 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * The time after which a confirmation URL expires.
+ */
+define('EMAILKIT_LIST_CONFIRMATION_URL_TIMEOUT', 86400); // 24 hours
+
+/**
  * Implementation of hook_perm().
  */
 function emailkit_list_perm() {
@@ -24,6 +29,12 @@ function emailkit_list_perm() {
  */
 function emailkit_list_menu() {
   $items = array();
+  
+  // Menu item for confirming subscription updates
+  $items['emailkit/list/confirm'] = array(
+    'page callback' => 'emailkit_list_confirmation_page',
+    'access callback' => TRUE,
+  );
   
   // Menu items for adding, editing and deleting e-mail lists
   $items['admin/emailkit/list/lists'] = array(
@@ -483,6 +494,124 @@ function emailkit_list_subscriber_delete($sid) {
   else {
     return FALSE;
   }
+}
+
+/**
+ * Sends a message to the given address that contains a link to confirm subscription to the given lists.
+ *
+ * @param $address A subscriber's e-mail address.
+ * @param $lids An array of list identifiers.
+ *
+ * @return A flag indicating whether the message was sent successfully.
+ */
+function emailkit_list_confirmation_send($address, $lids) {
+  $message = array(
+    '#subject' => t('Confirm your subscriptions'),
+    '#body' => array(
+      'link' => array(
+        '#value' => emailkit_list_confirmation_url($address, $lids),
+      ),
+    ),
+  );
+
+  $destination = array(
+    '#type' => 'emailkit_default',
+    '#recipients' => array(
+      array(
+        'address' => $address,
+      ),
+    ),
+  );
+
+  return emailkit_send($message, $destination);
+}
+
+/**
+ * Generates an absolute URL that can be used to confirm subscription to the given lists.
+ *
+ * @param $address A subscriber's e-mail address.
+ * @param $lids An array of list identifiers.
+ *
+ * @return An absolute URL.
+ */
+function emailkit_list_confirmation_url($address, $lids) {
+  $timestamp = time();
+
+  $query = array(
+    'address' => $address,
+    'lids' => $lids,
+    'timestamp' => $timestamp,
+    'hash' => emailkit_list_confirmation_hash($address, $lids, $timestamp),
+  );
+  
+  return url('emailkit/list/confirm', array('query' => $query, 'absolute' => TRUE));
+}
+
+/**
+ * Handles a confirmation URL.
+ */
+function emailkit_list_confirmation_page() {
+  // Get the address and ensure it is a valid e-mail address
+  $address = $_GET['address'];
+  if (!valid_email_address($address)) {
+    return drupal_access_denied();
+  }
+  
+  // Get the list identifiers and make sure they are all numeric
+  $lids = $_GET['lids'];
+  foreach ($lids as $lid) {
+    if (!is_numeric($lid)) {
+      return drupal_access_denied();
+    }
+  }
+  
+  // Get the timestamp and check whether it is numeric and does not lie in the future or too far in the past
+  $timestamp = $_GET['timestamp'];
+  if (!is_numeric($timestamp) || $timestamp > time()) {
+    return drupal_access_denied();
+  }
+  else if ($timestamp < time() - EMAILKIT_LIST_CONFIRMATION_URL_TIMEOUT) {
+    drupal_set_message(t('This URL has expired. Please retry to update your subscriptions.'), 'error');
+    
+    return drupal_goto();
+  }
+  
+  // Get the hash and check whether it is valid, so that we know the URL has not been altered
+  $hash = $_GET['hash'];
+  if ($hash != emailkit_list_confirmation_hash($address, $lids, $timestamp)) {
+    return drupal_access_denied();
+  }
+  
+  // Check if there is an existing subscriber
+  $subscriber = emailkit_list_subscriber_load_by_address($address);
+  
+  // Create a new one if necessary
+  if (!isset($subscriber)) {
+    $subscriber = emailkit_list_subscriber_new();
+    $subscriber->address = $address;
+    
+    // If we were unable to save the subscriber, set it to NULL so we can check this condition later
+    if (!emailkit_list_subscriber_save($subscriber)) {
+      unset($subscriber);
+    }
+  }
+  
+  // Check whether we have a subscriber and try to save the subscriptions
+  if (isset($subscriber) && emailkit_list_subscriber_save_subscriptions($subscriber->sid, $lids)) {
+    drupal_set_message(t('Your confirmation has been received and your subscriptions have been updated.'));
+  }
+  else {
+    drupal_set_message(t('Your confirmation has been received, but your subscriptions could not be updated. Please try again later.'), 'error');
+  }
+  
+  return drupal_goto();
+}
+
+/**
+ * Generates a salted hash based on the given parameters. Since the salt is secret, we can be relatively sure we are the only ones that can generate this hash.
+ */
+function emailkit_list_confirmation_hash($address, $lids, $timestamp) {
+  return md5($address . implode(',', $lids) . $timestamp . drupal_get_private_key());
 }
 
 /**

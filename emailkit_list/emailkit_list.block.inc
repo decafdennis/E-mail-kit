@@ -82,7 +82,9 @@ function emailkit_list_block_subscriptions_form_validate($form, &$form_state) {
 function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
   global $user;
   
-  // Find the subscriber or create one
+  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
+  
+  // If we have a logged in user, we update the subscriptions right away
   if ($user->uid) {
     $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
     
@@ -96,29 +98,23 @@ function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
         unset($subscriber);
       }
     }
-  }
-  else {
-    $subscriber = emailkit_list_subscriber_load_by_address($form_state['values']['mail']);
-
-    if (!isset($subscriber)) {
-      $subscriber = emailkit_list_subscriber_new();
-      $subscriber->address = $form_state['values']['mail'];
-      
-      // If we were unable to save the subscriber, set it to NULL so we can check this condition later
-      if (!emailkit_list_subscriber_save($subscriber)) {
-        unset($subscriber);
-      }
+    
+    // Check whether we have a subscriber and try to save the subscriptions
+    if (isset($subscriber) && emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
+      drupal_set_message(t('Your subscriptions have been updated.'));
+    }
+    else {
+      drupal_set_message(t('Your subscriptions could not be updated.'), 'error');
     }
   }
-  
-  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
-
-  // Check whether we have a subscriber and try to save the subscriptions
-  // TODO: If no user is currently logged in, we must send an e-mail first to confirm the change!
-  if (!isset($subscriber) || !emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
-    drupal_set_message(t('Your subscriptions could not be updated.'), 'error');
-  }
+  // Otherwise, we send a confirmation e-mail
   else {
-    drupal_set_message(t('Your subscriptions have been updated.'));
+    // TODO: check whether this e-mail address is not already associated with a registered user and ask them to login, so that we don't have to send a confirmation e-mail?
+    if (emailkit_list_confirmation_send($form_state['values']['mail'], $subscriptions)) {
+      drupal_set_message(t('An e-mail with a confirmation link has been sent to %address. Your subscriptions will be updated as soon as your confirmation has been received.', array('%address' => $form_state['values']['mail'])));
+    }
+    else {
+      drupal_set_message(t('Your subscriptions could not be updated.'), 'error');
+    }
   }
 }
