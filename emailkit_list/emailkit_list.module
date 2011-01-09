@@ -598,7 +598,12 @@ function emailkit_list_confirmation_page() {
   
   // Check whether we have a subscriber and try to save the subscriptions
   if (isset($subscriber) && emailkit_list_subscriber_save_subscriptions($subscriber->sid, $lids)) {
-    drupal_set_message(t('Your confirmation has been received and your subscriptions have been updated.'));
+    if (empty($lids)) {
+      drupal_set_message(t('You have successfully been unsubscribed.'));
+    }
+    else {
+      drupal_set_message(t('Your confirmation has been received and your subscriptions have been updated.'));
+    }
   }
   else {
     drupal_set_message(t('Your confirmation has been received, but your subscriptions could not be updated. Please try again later.'), 'error');
