@@ -20,6 +20,7 @@ Icebox
 		* Opened (per recipient, total)
 		* Clicks (per recipient, total)
 		* Unsubscribes
+	* Allow subscribers to change their e-mail address
 * E-mail list subscription permissions
 * List and subscriber hooks to support for member management modules
 	* Manage lists and subscribers

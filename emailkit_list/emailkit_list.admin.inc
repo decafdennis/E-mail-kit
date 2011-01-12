@@ -235,10 +235,11 @@ function emailkit_list_admin_subscriber_edit($subscriber) {
  */
 function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
   $form = array();
-  
-  // New, or existing list?
+
   if (isset($subscriber)) {
     $form['#subscriber'] = $subscriber;
+    
+    $user = user_load($subscriber->uid);
   }
   
   $form['address'] = array(
@@ -249,9 +250,6 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     '#required' => TRUE,
   );
   
-  if (isset($subscriber)) {
-    $user = user_load($subscriber->uid);
-  }
   $form['username'] = array(
     '#type' => 'textfield',
     '#title' => t('User account'),
@@ -310,6 +308,18 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
  * Handles validating of a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
+  if (!empty($form_state['values']['username'])) {
+    // Check whether a user with that username exists
+    $user = user_load(array('name' => $form_state['values']['username']));
+    if (!$user) {
+      form_set_error('username', t('The user account %username does not exist.', array('%username' => $form_state['values']['username'])));
+    }
+    // Check whether the user account is already associated with a different subscriber
+    else if (($user_subscriber = emailkit_list_subscriber_load_by_user($user->uid)) && !(isset($form['#subscriber']) && $form['#subscriber']->sid == $user_subscriber->sid)) {
+      form_set_error('username', t('The user account %username is already associated with another subscriber.', array('%username' => $form_state['values']['username'])));
+    }
+  }
+  
   if (!empty($form_state['values']['address'])) {
     $address = $form_state['values']['address'];
     
@@ -317,28 +327,12 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
     if (!valid_email_address($address)) {
       form_set_error('address', t('E-mail address is invalid.'));
     }
-    else {
-      // Check whether the e-mail address is already associated with a different subscriber
-      $address_subscriber = emailkit_list_subscriber_load_by_address($address);
-      if ($address_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->sid == $address_subscriber->sid)) {
-        form_set_error('address', t('The e-mail address %address is already associated with another subscriber.', array('%address' => $address)));
-      }
+    // Check whether the e-mail address is already associated with a different subscriber
+    else if (($address_subscriber = emailkit_list_subscriber_load_by_address($address)) && !(isset($form['#subscriber']) && $form['#subscriber']->sid == $address_subscriber->sid)) {
+      form_set_error('address', t('The e-mail address %address is already associated with another subscriber.', array('%address' => $address)));
     }
-  }
-
-  if (!empty($form_state['values']['username'])) {
-    // Check whether a user with that username exists
-    $user = user_load(array('name' => $form_state['values']['username']));
-    if (!$user) {
-      form_set_error('username', t('The user account %username does not exist.', array('%username' => $form_state['values']['username'])));
-    }
-    else {
-      // Check whether the user account is already associated with a different subscriber
-      $user_subscriber = emailkit_list_subscriber_load_by_user($user->uid);
-      if ($user_subscriber != NULL && !(isset($form['#subscriber']) && $form['#subscriber']->sid == $user_subscriber->sid)) {
-        form_set_error('username', t('The user account %username is already associated with another subscriber.', array('%username' => $form_state['values']['username'])));
-      }
-    }
+    
+    // TODO: Check whether the address is not already associated with a user account that has no subscriber yet
   }
 }
 

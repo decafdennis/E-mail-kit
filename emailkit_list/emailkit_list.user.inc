@@ -1,6 +1,8 @@
 <?php
 // Developed by Dennis Stevense for Digital Deployment
 
+// TODO: Synchronize subscriber e-mail address and user e-mail address
+
 /**
  * Returns the form elements that should be injected into the user profile form.
  */
