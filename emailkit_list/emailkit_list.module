@@ -153,7 +153,7 @@ function emailkit_list_theme() {
 /**
  * Implementation of hook_user().
  */
-function emailkit_list_user($op, &$edit, &$account, $category = NULL) {
+function emailkit_list_user($op, &$edit, &$user, $category = NULL) {
   if (!(user_access('edit own subscriptions') || user_access('administer subscriptions'))) {
     return;
   }
@@ -162,10 +162,10 @@ function emailkit_list_user($op, &$edit, &$account, $category = NULL) {
   
   switch ($op) {
     case 'form':
-      return emailkit_list_user_form($account);
+      return emailkit_list_user_form($user);
       
     case 'update':
-      return emailkit_list_user_form_submit($account, $edit);
+      return emailkit_list_user_form_submit($user, $edit);
   }
 }
 

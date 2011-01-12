@@ -1,8 +1,6 @@
 <?php
 // Developed by Dennis Stevense for Digital Deployment
 
-// TODO: Synchronize subscriber e-mail address and user e-mail address
-
 /**
  * Returns the form elements that should be injected into the user profile form.
  */
@@ -39,13 +37,22 @@ function emailkit_list_user_form($user) {
 }
 
 /**
- * Handles submission of the form elements that have been injected into the user profile form.
+ * Handles submission of the user profile form.
  */
 function emailkit_list_user_form_submit($user, &$values) {
+  if (isset($values['mail']) && $values['mail'] != $user->mail) {
+    // Check if we have an existing subscriber
+    if ($subscriber = emailkit_list_subscriber_load_by_address($user->mail)) {
+      $subscriber->address = $values['mail'];
+      emailkit_list_subscriber_save($subscriber);
+    }
+  }
+  
   if (isset($values['emailkit_list_subscriptions'])) {
     // Create or update the subscriber
+    // Note: make sure to use the new e-mail address to find the subscriber ($user->mail has the old e-mail address)
     // Note: since a registered user has submitted this form, we count this is as a confirmed subscription
-    $subscriber = emailkit_list_subscriber_load_by_address($user->mail, TRUE);
+    $subscriber = emailkit_list_subscriber_load_by_address($values['mail'], TRUE);
     $subscriber->confirmed = TRUE;
 
     // Update the subscriptions
