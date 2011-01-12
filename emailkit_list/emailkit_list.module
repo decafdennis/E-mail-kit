@@ -116,6 +116,18 @@ function emailkit_list_menu() {
 /**
  * Implementation of hook_theme().
  */
+
+function emailkit_list_help($path, $arg) {
+  switch ($path) {
+    case 'admin/emailkit/list/subscribers/add':
+    case 'admin/emailkit/list/subscribers/%/edit':
+      return t('<p>Either a valid e-mail address or the name of an existing user account is required. If you enter a username, the e-mail address will be determined automatically.</p>');
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
 function emailkit_list_theme() {
   $theme = array();
   
@@ -315,11 +327,14 @@ function emailkit_list_delete($lid) {
 
 /**
  * Returns a new unsaved subscriber with default values.
+ *
+ * @param $address The address of the new subscriber.
+ *
+ * @return An unsaved subscriber object.
  */
-function emailkit_list_subscriber_new() {
+function emailkit_list_subscriber_new($address) {
   $subscriber = new stdClass();
-  $subscriber->address = "";
-  $subscriber->uid = 0;
+  $subscriber->address = $address;
   $subscriber->confirmed = FALSE;
   return $subscriber;
 }
@@ -336,24 +351,19 @@ function emailkit_list_subscriber_load($sid) {
 }
 
 /**
- * Loads the subscriber with the given address from the database.
+ * Loads the subscriber with the given address from the database, or optionally creates a new one.
+ *
+ * @param $address The e-mail address to look for.
+ * @param $new Whether to create a new (unsaved) subscriber
  *
  * @return A subscriber object or NULL.
  */
-function emailkit_list_subscriber_load_by_address($address) {
+function emailkit_list_subscriber_load_by_address($address, $new = FALSE) {
   if ($subscriber = db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE address = '%s'", $address))) {
     return $subscriber;
   }
-}
-
-/**
- * Loads the subscriber with the given user identifier from the database.
- *
- * @return A subscriber object or NULL.
- */
-function emailkit_list_subscriber_load_by_user($uid) {
-  if ($subscriber = db_fetch_object(db_query("SELECT * FROM {emailkit_list_subscriber} WHERE uid = %d", $uid))) {
-    return $subscriber;
+  else if ($new) {
+    return emailkit_list_subscriber_new($address);
   }
 }
 
@@ -414,7 +424,7 @@ function emailkit_list_subscriber_load_subscriptions($sid) {
  */
 function emailkit_list_subscriber_save(&$subscriber) {
   if (isset($subscriber->sid)) {
-    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', uid = %d, confirmed = %d WHERE sid = %d", $subscriber->address, $subscriber->uid, $subscriber->confirmed, $subscriber->sid);
+    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', confirmed = %d WHERE sid = %d", $subscriber->address, $subscriber->confirmed, $subscriber->sid);
     
     if (db_affected_rows() == 1) {
       return SAVED_UPDATED;
@@ -424,7 +434,7 @@ function emailkit_list_subscriber_save(&$subscriber) {
     }
   }
   else {
-    db_query("INSERT INTO {emailkit_list_subscriber} (address, uid, confirmed) VALUES ('%s', %d, %d)", $subscriber->address, $subscriber->uid, $subscriber->confirmed);
+    db_query("INSERT INTO {emailkit_list_subscriber} (address, confirmed) VALUES ('%s', %d)", $subscriber->address, $subscriber->confirmed);
 
     if (db_affected_rows() == 1) {
       $subscriber->sid = db_last_insert_id('emailkit_list_subscriber', 'sid');
@@ -495,6 +505,32 @@ function emailkit_list_subscriber_delete($sid) {
   else {
     return FALSE;
   }
+}
+
+/**
+ * Loads the user with the given address from the database. Unlike user_load(), this function returns the anonymous user or NULL when no such user exists.
+ *
+ * @param $address The e-mail address to look for.
+ * @param $null Whether to return NULL instead of the anonymous user when the user is not found.
+ *
+ * @return A user object.
+ */
+function emailkit_list_user_load_by_address($address, $null = FALSE) {
+  static $anonymous_user;
+  
+  $user = user_load(array('mail' => $address));
+  
+  // Fallback to the anonymous user if no user was found with that address
+  if (!$user) {
+    // Lazily load the anonymous user
+    if (!isset($anonymous_user)) {
+      $anonymous_user = user_load(0);
+    }
+    
+    $user = $anonymous_user;
+  }
+  
+  return $user;
 }
 
 /**
@@ -594,8 +630,7 @@ function emailkit_list_confirmation_page() {
   }
   else {
     // Create a new one
-    $subscriber = emailkit_list_subscriber_new();
-    $subscriber->address = $address;
+    $subscriber = emailkit_list_subscriber_new($address);
     $subscriber->confirmed = TRUE;
     
     // If we were unable to save the subscriber, set it to NULL so we can check this condition later

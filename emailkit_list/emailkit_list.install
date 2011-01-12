@@ -62,13 +62,6 @@ function emailkit_list_schema() {
         'length' => 255,
         'not null' => TRUE,
       ),
-      'uid' => array(
-        'description' => 'The user identifier associated with the subscriber.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'confirmed' => array(
         'description' => 'Flag indicating whether the subscriber has confirmed their subscription.',
         'type' => 'int',
@@ -80,9 +73,6 @@ function emailkit_list_schema() {
     'primary key' => array('sid'),
     'unique keys' => array(
       'address' => array('address'),
-    ),
-    'indexes' => array(
-      'uid' => array('uid'),
     ),
   );
   

@@ -27,7 +27,7 @@ function emailkit_list_user_form($user) {
     $options[$lid] = $list->name;
   }
   
-  $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
+  $subscriber = emailkit_list_subscriber_load_by_address($user->mail);
   
   $form['emailkit_list_subscriptions']['subscriptions'] = array(
     '#type' => 'checkboxes',
@@ -43,26 +43,14 @@ function emailkit_list_user_form($user) {
  */
 function emailkit_list_user_form_submit($user, &$values) {
   if (isset($values['emailkit_list_subscriptions'])) {
-    $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
+    // Create or update the subscriber
+    // Note: since a registered user has submitted this form, we count this is as a confirmed subscription
+    $subscriber = emailkit_list_subscriber_load_by_address($user->mail, TRUE);
+    $subscriber->confirmed = TRUE;
 
-    if (isset($subscriber)) {
-      // This counts as a confirmed subscription
-      if (!$subscriber->confirmed) {
-        $subscriber->confirmed = TRUE;
-        emailkit_list_subscriber_save($subscriber);
-      }
-    }
-    else {
-      $subscriber = emailkit_list_subscriber_new();
-      $subscriber->address = $user->mail;
-      $subscriber->uid = $user->uid;
-      $subscriber->confirmed = TRUE;
-      emailkit_list_subscriber_save($subscriber);
-    }
-    
+    // Update the subscriptions
     $subscriptions = array_keys(array_filter($values['emailkit_list_subscriptions']['subscriptions']));
-    
-    if (!emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
+    if (!(emailkit_list_subscriber_save($subscriber) && emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions))) {
       drupal_set_message(t('Your subscriptions could not be saved.'), 'warning');
     }
     
