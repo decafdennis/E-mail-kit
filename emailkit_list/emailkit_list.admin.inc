@@ -411,7 +411,20 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
       $subscriber = emailkit_list_subscriber_new($address);
     }
   }
+  
+  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
 
+  // If the administrator makes a significant change to the subscriptions, put the subscriber status back to unconfirmed
+  if (isset($subscriber->sid)) {
+    $current_subscriptions = emailkit_list_subscriber_load_subscriptions($subscriber->sid);
+
+    // When the subscriber was previously not subscribed to anything or vice versa, that is a significant change
+    if (empty($current_subscriptions) != empty($subscriptions)) {
+      $subscriber->confirmed = FALSE;
+    }
+  }
+
+  // Save the subscriber
   switch (emailkit_list_subscriber_save($subscriber)) {
     case SAVED_NEW;
       drupal_set_message(t('The subscriber has been added.'));
@@ -427,8 +440,6 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
   }
 
   // Update the subscriptions
-  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
-  
   if (!emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
     drupal_set_message(t('The subscriber\'s subscriptions could not be saved.'), 'warning');
   }
