@@ -576,11 +576,15 @@ function emailkit_list_confirmation_url($address, $lids) {
 
   $query = array(
     'address' => $address,
-    'lids' => $lids,
     'timestamp' => $timestamp,
     'hash' => emailkit_list_confirmation_hash($address, $lids, $timestamp),
   );
-  
+
+  // Empty arrays don't translate well into query strings
+  if (!empty($lids)) {
+    $query['lids'] = $lids;
+  }
+
   return url('emailkit/list/confirm', array('query' => $query, 'absolute' => TRUE));
 }
 
@@ -595,7 +599,7 @@ function emailkit_list_confirmation_page() {
   }
   
   // Get the list identifiers and make sure they are all numeric
-  $lids = $_GET['lids'];
+  $lids = isset($_GET['lids']) ? $_GET['lids'] : array();
   foreach ($lids as $lid) {
     if (!is_numeric($lid)) {
       return drupal_access_denied();
