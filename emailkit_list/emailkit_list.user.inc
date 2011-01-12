@@ -43,10 +43,18 @@ function emailkit_list_user_form_submit($user, &$values) {
   if (isset($values['emailkit_list_subscriptions'])) {
     $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
 
-    if (!isset($subscriber)) {
+    if (isset($subscriber)) {
+      // This counts as a confirmed subscription
+      if (!$subscriber->confirmed) {
+        $subscriber->confirmed = TRUE;
+        emailkit_list_subscriber_save($subscriber);
+      }
+    }
+    else {
       $subscriber = emailkit_list_subscriber_new();
       $subscriber->address = $user->mail;
       $subscriber->uid = $user->uid;
+      $subscriber->confirmed = TRUE;
       emailkit_list_subscriber_save($subscriber);
     }
     

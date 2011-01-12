@@ -69,6 +69,13 @@ function emailkit_list_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'confirmed' => array(
+        'description' => 'Flag indicating whether the subscriber has confirmed their subscription.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('sid'),
     'unique keys' => array(

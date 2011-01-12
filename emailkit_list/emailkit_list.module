@@ -320,6 +320,7 @@ function emailkit_list_subscriber_new() {
   $subscriber = new stdClass();
   $subscriber->address = "";
   $subscriber->uid = 0;
+  $subscriber->confirmed = FALSE;
   return $subscriber;
 }
 
@@ -413,7 +414,7 @@ function emailkit_list_subscriber_load_subscriptions($sid) {
  */
 function emailkit_list_subscriber_save(&$subscriber) {
   if (isset($subscriber->sid)) {
-    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', uid = %d WHERE sid = %d", $subscriber->address, $subscriber->uid, $subscriber->sid);
+    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', uid = %d, confirmed = %d WHERE sid = %d", $subscriber->address, $subscriber->uid, $subscriber->confirmed, $subscriber->sid);
     
     if (db_affected_rows() == 1) {
       return SAVED_UPDATED;
@@ -423,7 +424,7 @@ function emailkit_list_subscriber_save(&$subscriber) {
     }
   }
   else {
-    db_query("INSERT INTO {emailkit_list_subscriber} (address, uid) VALUES ('%s', %d)", $subscriber->address, $subscriber->uid);
+    db_query("INSERT INTO {emailkit_list_subscriber} (address, uid, confirmed) VALUES ('%s', %d, %d)", $subscriber->address, $subscriber->uid, $subscriber->confirmed);
 
     if (db_affected_rows() == 1) {
       $subscriber->sid = db_last_insert_id('emailkit_list_subscriber', 'sid');
@@ -585,10 +586,17 @@ function emailkit_list_confirmation_page() {
   // Check if there is an existing subscriber
   $subscriber = emailkit_list_subscriber_load_by_address($address);
   
-  // Create a new one if necessary
-  if (!isset($subscriber)) {
+  if (isset($subscriber)) {
+    if (!$subscriber->confirmed) {
+      $subscriber->confirmed = TRUE;
+      emailkit_list_subscriber_save($subscriber);
+    }
+  }
+  else {
+    // Create a new one
     $subscriber = emailkit_list_subscriber_new();
     $subscriber->address = $address;
+    $subscriber->confirmed = TRUE;
     
     // If we were unable to save the subscriber, set it to NULL so we can check this condition later
     if (!emailkit_list_subscriber_save($subscriber)) {

@@ -202,6 +202,7 @@ function emailkit_list_admin_subscriber_list_form(&$form_state) {
   $header = array(
     array('data' => t('E-mail address'), 'field' => 'address'),
     array('data' => t('User account'), 'field' => 'uid'),
+    array('data' => t('Status'), 'field' => 'confirmed'),
   );
 
   $form['subscribers'] = array();
@@ -259,6 +260,15 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     '#default_value' => isset($user) ? $user->name : '',
     '#description' => t('The username of the subscriber. Leave blank if this subscriber has no user account on the site.'),
   );
+  
+  if (isset($subscriber)) {
+    $form['confirmed'] = array(
+      '#type' => 'item',
+      '#title' => t('Status'),
+      '#value' => $subscriber->confirmed ? t('Confirmed') : t('Unconfirmed'),
+      '#description' => t('Indicates whether the subscriber has confirmed their subscription. This is true if subscription happened while being logged in or if the link in a subscription confirmation e-mail was clicked.'),
+    );
+  }
 
   $options = array();
   $lists = emailkit_list_load_all();
@@ -481,6 +491,7 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
   $header = array(
     array('data' => t('E-mail address'), 'field' => 'address'),
     array('data' => t('User account'), 'field' => 'uid'),
+    array('data' => t('Status'), 'field' => 'confirmed'),
     array('data' => t('Operations'), 'colspan' => 2)
   );
   $rows = array();
@@ -490,6 +501,7 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
     $row = array();
     $row[] = check_plain($subscriber->address);
     $row[] = theme('username', user_load($subscriber->uid));
+    $row[] = $subscriber->confirmed ? t('Confirmed') : t('Unconfirmed');
     $row[] = l(t('edit'), 'admin/emailkit/list/subscribers/' . $sid . '/edit', array('query' => drupal_get_destination()));
     $row[] = l(t('delete'), 'admin/emailkit/list/subscribers/' . $sid . '/delete', array('query' => drupal_get_destination()));
     $rows[] = $row;

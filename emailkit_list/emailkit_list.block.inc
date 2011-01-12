@@ -88,10 +88,18 @@ function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
   if ($user->uid) {
     $subscriber = emailkit_list_subscriber_load_by_user($user->uid);
     
-    if (!isset($subscriber)) {
+    if (isset($subscriber)) {
+      // This counts as a confirmed subscription
+      if (!$subscriber->confirmed) {
+        $subscriber->confirmed = TRUE;
+        emailkit_list_subscriber_save($subscriber);
+      }
+    }
+    else {
       $subscriber = emailkit_list_subscriber_new();
       $subscriber->address = $user->mail;
       $subscriber->uid = $user->uid;
+      $subscriber->confirmed = TRUE;
       
       // If we were unable to save the subscriber, set it to NULL so we can check this condition later
       if (!emailkit_list_subscriber_save($subscriber)) {
