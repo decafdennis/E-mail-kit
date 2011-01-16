@@ -5,6 +5,8 @@
  * Returns the form elements that should be injected into the user profile form.
  */
 function emailkit_list_user_form($user) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $lists = emailkit_list_load_all();
   if (empty($lists)) {
     return array();
@@ -40,6 +42,8 @@ function emailkit_list_user_form($user) {
  * Handles submission of the user profile form.
  */
 function emailkit_list_user_form_submit($user, &$values) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   if (isset($values['mail']) && $values['mail'] != $user->mail) {
     // Check if we have an existing subscriber
     if ($subscriber = emailkit_list_subscriber_load_by_address($user->mail)) {

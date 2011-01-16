@@ -20,6 +20,8 @@ define('EMAILKIT_LIST_ADMIN_SUBSCRIBER_LIST_LIMIT', 50);
  * Returns the admin page that lists the e-mail lists.
  */
 function emailkit_list_admin_list() {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   return drupal_get_form('emailkit_list_admin_list_form', emailkit_list_load_all());
 }
 
@@ -61,6 +63,8 @@ function emailkit_list_admin_list_form(&$form_state, $lists) {
  * Handles submission of the e-mail lists admin form.
  */
 function emailkit_list_admin_list_form_submit($form, &$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   foreach ($form_state['values']['lists'] as $lid => $list_values) {
     $list = $form['lists'][$lid]['#list'];
     
@@ -117,6 +121,8 @@ function emailkit_list_admin_form(&$form_state, $list = NULL) {
  * Handles submission of an e-mail list admin form.
  */
 function emailkit_list_admin_form_submit($form, &$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   // Get the list
   if (isset($form['#list'])) {
     $list = $form['#list'];
@@ -174,6 +180,8 @@ function emailkit_list_admin_delete_confirm_form(&$form_state, $list) {
  * Handles submission of a confirmation form for deleting an e-mail list.
  */
 function emailkit_list_admin_delete_confirm_form_submit($form, &$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   if ($form_state['values']['confirm']) {
     if (emailkit_list_delete($form['#lid'])) {
       drupal_set_message(t('The list has been deleted.'));
@@ -197,6 +205,8 @@ function emailkit_list_admin_subscriber_list() {
  * Returns the subscribers admin form.
  */
 function emailkit_list_admin_subscriber_list_form(&$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $form = array();
   
   $header = array(
@@ -233,6 +243,8 @@ function emailkit_list_admin_subscriber_edit($subscriber) {
  * Returns a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $form = array();
 
   // New, or existing subscriber?
@@ -330,6 +342,8 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
  * Handles validating of a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $subscriber = isset($form['#subscriber']) ? $form['#subscriber'] : NULL;
   $user = isset($form['#user']) ? $form['#user'] : NULL;
   
@@ -388,6 +402,8 @@ function emailkit_list_admin_subscriber_form_validate($form, &$form_state) {
  * Handles submission of a subscriber admin form.
  */
 function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $subscriber = isset($form['#subscriber']) ? $form['#subscriber'] : NULL;
   $user = isset($form['#user']) ? $form['#user'] : NULL;
   
@@ -475,6 +491,8 @@ function emailkit_list_admin_subscriber_delete_confirm_form(&$form_state, $subsc
  * Handles submission of a confirmation form for deleting a subscriber.
  */
 function emailkit_list_admin_subscriber_delete_confirm_form_submit($form, &$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   if ($form_state['values']['confirm']) {
     if (emailkit_list_subscriber_delete($form['#sid'])) {
       drupal_set_message(t('The subscriber has been deleted.'));
@@ -544,6 +562,8 @@ function theme_emailkit_list_admin_list_form($form) {
  * @param $form The subscribers admin form.
  */
 function theme_emailkit_list_admin_subscriber_list_form($form) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $output = "";
 
   // Start building the subscribers table

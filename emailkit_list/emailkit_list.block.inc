@@ -5,6 +5,8 @@
  * Implementation of the view operation for the subscriptions block.
  */
 function emailkit_list_block_subscriptions_view() {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
   $lists = emailkit_list_load_all();
   
   // If we have no lists, just return so the block will disappear
@@ -24,6 +26,8 @@ function emailkit_list_block_subscriptions_view() {
  */
 function emailkit_list_block_subscriptions_form(&$form_state, $lists) {
   global $user;
+  
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
 
   $form = array();
   
@@ -81,6 +85,8 @@ function emailkit_list_block_subscriptions_form_validate($form, &$form_state) {
  */
 function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
   global $user;
+  
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
   
   $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
   
