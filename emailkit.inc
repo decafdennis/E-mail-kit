@@ -32,6 +32,9 @@ function _emailkit_entity_info($domain, $identifier = NULL, $reset = FALSE) {
       $module_info = module_invoke($module, $hook);
 
       foreach ($module_info as $entity_identifier => $entity_info) {
+        // Force the #module parameter
+        $entity_info['#module'] = $module;
+        
         // Add the domain-specific entity defaults as well as the general defaults
         $entity_info += $defaults + array(
           '#file' => NULL,

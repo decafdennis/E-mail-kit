@@ -26,15 +26,25 @@ function emailkit_menu() {
     'file path' => drupal_get_path('module', 'system'),
   );
 
-  $items['admin/emailkit/settings'] = array(
-    'title' => 'Settings',
-    'description' => 'Control general e-mail sending behavior.',
-    'page callback' => 'emailkit_admin_settings',
+  $items['admin/emailkit/messages'] = array(
+    'title' => 'Messages',
+    'description' => 'Control the behavior of different kinds of messages.',
+    'page callback' => 'emailkit_admin_message_type_list',
     'access arguments' => array('administer e-mail kit'),
     'file' => 'emailkit.admin.inc',
   );
   
   return $items;
+}
+
+/**
+ * Implementation of hook_help().
+ */
+function emailkit_help($path, $arg) {
+  switch ($path) {
+    case 'admin/emailkit/messages':
+      return t('<p>Below is a list of different kinds of e-mail messages that are sent from the site. You can configure each type of message to suit your needs.</p>');
+  }
 }
 
 /**
@@ -69,6 +79,13 @@ function emailkit_theme() {
       'element' => array(),
     ),
     'file' => 'emailkit.destination_select.inc',
+  );
+  
+  $theme['emailkit_admin_message_type_list'] = array(
+    'arguments' => array(
+      'message_types' => array(),
+    ),
+    'file' => 'emailkit.admin.inc',
   );
   
   return $theme;
@@ -199,6 +216,7 @@ function emailkit_destination_form($type) {
  *
  * @return The name of a dispatcher.
  */
+// TODO: Rewrite this function to allow users to configure the dispatcher to use per message type
 function emailkit_destination_dispatcher($type) {
   if (!isset($type)) {
     return NULL;
@@ -405,4 +423,32 @@ function _emailkit_element_set_validated(&$element) {
   foreach (element_children($element) as $key) {
     _emailkit_element_set_validated($element[$key]);
   }
+}
+
+/**
+ * Private helper function that calculates the total column span of a given table header or row, so that this doesn't have to be hardcoded when adding rows that span the whole table width.
+ */
+function _emailkit_table_colspan($row_or_header) {
+  $colspan = 0;
+  
+  // Check whether this is a row with additional attributes, in which case we need to look at the data attribute
+  if (isset($row_or_header['data'])) {
+    $cells = $row_or_header['data'];
+  }
+  else {
+    $cells = $row_or_header;
+  }
+
+  foreach ($cells as $cell) {
+    // If the cell has an explicit column span, add that
+    if (is_array($cell) && isset($cell['colspan'])) {
+      $colspan += $cell['colspan'];
+    }
+    // Otherwise, just add 1
+    else {
+      $colspan++;
+    }
+  }
+  
+  return $colspan;
 }

@@ -115,9 +115,8 @@ function emailkit_list_menu() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implementation of hook_help().
  */
-
 function emailkit_list_help($path, $arg) {
   switch ($path) {
     case 'admin/emailkit/list/subscribers/add':
@@ -230,7 +229,7 @@ function emailkit_list_emailkit_message_info() {
   $info = array();
 
   $info['emailkit_list_confirmation'] = array(
-    '#label' => t('E-mail list subscription confirmation'),
+    '#label' => t('Subscription confirmation'),
     '#file' => 'emailkit_list.inc',
   );
   

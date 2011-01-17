@@ -125,7 +125,7 @@ function hook_dispatcher_send($dispatcher_name, $message, $destination) {
  * This is a module-level hook. Implementation is optional.
  *
  * @return An array of message type information keyed by message id. Message type information is a subarray with the following attributes:
- *   #label: The human-readable name of the message type. Capitalize and wrap in t(). Required.
+ *   #label: The human-readable name of the message type. It is not necessary to include the module name. Capitalize and wrap in t(). Required.
  *   #file: The file that needs to be included when invoking message type hooks. Optional.
  *   #base: The base for message type hooks. Optional. Defaults to the message id.
  */

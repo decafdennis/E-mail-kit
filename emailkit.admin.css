@@ -1,0 +1,9 @@
+/* Developed by Dennis Stevense for Digital Deployment */
+
+#emailkit-admin-message-type-list .module {
+  font-weight: bold;
+}
+
+#emailkit-admin-message-type-list .message-type .name {
+  padding-left: 1.5em;
+}
