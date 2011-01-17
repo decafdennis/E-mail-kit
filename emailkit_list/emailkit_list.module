@@ -224,6 +224,20 @@ function emailkit_list_emailkit_dispatcher_info() {
 }
 
 /**
+ * Implementation of emailkit_emailkit_message_info().
+ */
+function emailkit_list_emailkit_message_info() {
+  $info = array();
+
+  $info['emailkit_list_confirmation'] = array(
+    '#label' => t('E-mail list subscription confirmation'),
+    '#file' => 'emailkit_list.inc',
+  );
+  
+  return $info;
+}
+
+/**
  * Loads the list with the given identifier from the database.
  *
 * @return A list, or NULL if it cannot be found.

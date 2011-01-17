@@ -299,14 +299,7 @@ function emailkit_list_user_load_by_address($address, $null = FALSE) {
  * @return A flag indicating whether the message was sent successfully.
  */
 function emailkit_list_confirmation_send($address, $lids) {
-  $message = array(
-    '#subject' => t('Confirm your subscriptions'),
-    '#body' => array(
-      'link' => array(
-        '#value' => emailkit_list_confirmation_url($address, $lids),
-      ),
-    ),
-  );
+  $message = emailkit_message('emailkit_list_confirmation', $address, $lids);
 
   $destination = array(
     '#type' => 'emailkit_default',
@@ -318,6 +311,20 @@ function emailkit_list_confirmation_send($address, $lids) {
   );
 
   return emailkit_send($message, $destination);
+}
+
+/**
+ * Implementation of hook_message() for the emailkit_list_confirmation message.
+ */
+function emailkit_list_confirmation_message($message_id, $address, $lids) {
+  return array(
+    '#subject' => t('Confirm your subscriptions'),
+    '#body' => array(
+      'link' => array(
+        '#value' => emailkit_list_confirmation_url($address, $lids),
+      ),
+    ),
+  );
 }
 
 /**

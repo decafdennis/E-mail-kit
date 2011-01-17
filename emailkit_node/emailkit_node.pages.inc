@@ -36,15 +36,7 @@ function emailkit_node_email_form(&$form_state, $node) {
  * Handles submission of the form for the E-mail tab on a node.
  */
 function emailkit_node_email_form_submit($form, &$form_state) {
-  $node = $form['#node'];
-  $message = array(
-    '#subject' => $node->title,
-    '#body' => array(
-      'node' => array(
-        '#value' => $node->teaser,
-      ),
-    ),
-  );
+  $message = emailkit_message('emailkit_node', $form['#node']);
 
   if (emailkit_destination_select_send($message, $form_state['values']['dest'])) {
     drupal_set_message(t('E-mail was sent successfully.'));

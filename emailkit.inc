@@ -9,7 +9,7 @@
  * @param $reset A flag indicating whether to reset the cache and call the info hooks again. Defaults to FALSE.
  */
 function _emailkit_entity_info($domain, $identifier = NULL, $reset = FALSE) {
-  assert('in_array($domain, array(\'destination\', \'dispatcher\')) /* should be a recognized domain */');
+  assert('in_array($domain, array(\'destination\', \'dispatcher\', \'message\')) /* should be a recognized domain */');
   
   static $info = NULL;
 

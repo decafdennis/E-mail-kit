@@ -116,3 +116,47 @@ function hook_emailkit_dispatcher_info() {
 function hook_dispatcher_send($dispatcher_name, $message, $destination) {
   return FALSE;
 }
+
+/**
+ * Returns the message types defined by this module.
+ *
+ * All types of messages sent by a module must be defined by the implementation of this hook, so that users can enable/disable various features for each messages type.
+ *
+ * This is a module-level hook. Implementation is optional.
+ *
+ * @return An array of message type information keyed by message id. Message type information is a subarray with the following attributes:
+ *   #label: The human-readable name of the message type. Capitalize and wrap in t(). Required.
+ *   #file: The file that needs to be included when invoking message type hooks. Optional.
+ *   #base: The base for message type hooks. Optional. Defaults to the message id.
+ */
+function hook_emailkit_message_info() {
+  $info = array();
+
+  $info['my_module_node'] = array(
+    '#label' => t('Content'),
+    '#file' => 'my_module.node.inc',
+  );
+
+  return $info;
+}
+
+/**
+ * Returns a structured message array for the given message id.
+ *
+ * This is a message type-level hook. Implementation is required.
+ *
+ * @param $message_id The message id.
+ * @param ... Any additional arguments that were passed into emailkit_message_get().
+ *
+ * @return A structured message array.
+ */
+function hook_message($message_id, $node) {
+  return array(
+    '#subject' => $node->title,
+    '#body' => array(
+      'node' => array(
+        '#value' => node_view($node),
+      ),
+    ),
+  );
+}

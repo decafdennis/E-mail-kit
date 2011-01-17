@@ -254,6 +254,65 @@ function _emailkit_dispatcher_info_defaults() {
 }
 
 /**
+ * Returns information about all available message types or just about the given message type.
+ *
+ * @param $id The id of the message type to return information about, or NULL to return information about all message types.
+ *
+ * @return If an id was given, a structured message type array or NULL if no such message type exists. Otherwise, an array of message type information keyed by message id.
+ */
+function emailkit_message_info($id = NULL, $reset = FALSE) {
+  module_load_include('inc', 'emailkit', 'emailkit');
+  
+  return _emailkit_entity_info('message', $id, $reset);
+}
+
+/**
+ * Private function used by _emailkit_entity_info that provides default values for message types.
+ */
+function _emailkit_message_info_defaults() {
+  return array(
+    '#label' => t('(Unlabeled)'),
+  );
+}
+
+/**
+ * Returns a structured message array for the given message id.
+ *
+ * @param $message_id The message id.
+ * @param ... Any additional arguments that will be passed into hook_message().
+ *
+ * @return A structured message array.
+ */
+function emailkit_message($message_id) {
+  if (!isset($message_id)) {
+    return NULL;
+  }
+  
+  // Get information about the message type
+  $info = emailkit_message_info($message_id);
+  if (!isset($info)) {
+    return NULL;
+  }
+    
+  module_load_include('inc', 'emailkit', 'emailkit');
+  
+  // Get the message
+  $function = _emailkit_entity_info_hook($info, 'message');
+  $args = func_get_args();
+  $message = call_user_func_array($function, $args);
+
+  // If we have a message, adapt a few of its properties
+  if (isset($message)) {
+    // Set #message_id if it hasn't been set already
+    if (!isset($form['#message_id'])) {
+      $message['#message_id'] = $message_id;
+    }
+  }
+  
+  return $message;
+}
+
+/**
  * Sends the given message to the given destination.
  *
  * @param $message A structured message array.
@@ -317,8 +376,6 @@ function emailkit_destination_select_send($message, $element_value) {
   // Finally, pass the stick to emailkit_send
   return emailkit_send($message, $destination);
 }
-
-
 
 /**
  * Private helper function that will include the appropriate file and pass on the message.

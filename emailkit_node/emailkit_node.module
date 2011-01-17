@@ -41,3 +41,17 @@ function emailkit_node_access($node) {
   
   return user_access('e-mail content') || ($node->uid == $user->uid && user_access('e-mail own content'));
 }
+
+/**
+ * Implementation of emailkit_emailkit_message_info().
+ */
+function emailkit_node_emailkit_message_info() {
+  $info = array();
+
+  $info['emailkit_node'] = array(
+    '#label' => t('Node'),
+    '#file' => 'emailkit_node.inc',
+  );
+  
+  return $info;
+}
