@@ -1,7 +1,9 @@
 Next
 ====
 
-* Keep track of whether subscribers have opted in or opted out
+* Statistics module that can be enabled per message type
+	* Sent (how many, when)
+	* Opened (how many, when, hook)
 
 Icebox
 ===================
