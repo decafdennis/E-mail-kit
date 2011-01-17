@@ -34,6 +34,27 @@ function emailkit_admin_message_type_list() {
 }
 
 /**
+ * Returns a page for editing the given message type.
+ */
+function emailkit_admin_message_type_edit($message_type) {
+  // Note: I know we could've just set the menu callback to drupal_get_form with emailkit_admin_message_type_form as an argument, but I believe that this determination should be made here, not in hook_menu()
+  return drupal_get_form('emailkit_admin_message_type_form', $message_type);
+}
+
+/**
+ * Returns a form for editing the given message type.
+ */
+function emailkit_admin_message_type_form(&$form_state, $message_type) {
+  $form = array(
+    '#message_type' => $message_type,
+  );
+
+  // TODO: Build form
+
+  return $form;
+}
+
+/**
  * Renders the admin page that lists the different message types for the user to configure.
  */
 function theme_emailkit_admin_message_type_list($message_types) {

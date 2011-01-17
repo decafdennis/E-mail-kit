@@ -33,8 +33,31 @@ function emailkit_menu() {
     'access arguments' => array('administer e-mail kit'),
     'file' => 'emailkit.admin.inc',
   );
+  $items['admin/emailkit/messages/%emailkit_message_type/edit'] = array(
+    'title callback' => 'emailkit_message_type_title',
+    'title arguments' => array(3),
+    'page callback' => 'emailkit_admin_message_type_edit',
+    'page arguments' => array(3),
+    'access arguments' => array('administer e-mail kit'),
+    'file' => 'emailkit.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
   
   return $items;
+}
+
+/**
+ * Menu item placeholder callback.
+ */
+function emailkit_message_type_load($message_id) {
+  return emailkit_message_info($message_id);
+}
+
+/**
+ * Menu item title callback.
+ */
+function emailkit_message_type_title($message_type) {
+  return $message_type['#label'];
 }
 
 /**
