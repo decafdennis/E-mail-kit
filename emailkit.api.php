@@ -15,6 +15,7 @@
  * @return An array of destination type information keyed by destination type name. Destination type information is a subarray with the following attributes:
  *   #label: The human-readable name of the destination type. Capitalize and wrap in t(). Required.
  *   #exposed: Flag indicating whether the destination type is exposed to the user for sending. Optional. Defaults to FALSE.
+ *   #default_dispatcher: The default dispatcher for this destination type. Required.
  *   #file: The file that needs to be included when invoking destination type hooks. Optional.
  *   #base: The base for destination type hooks. Optional. Defaults to the destination type name.
  */
@@ -24,6 +25,7 @@ function hook_emailkit_destination_info() {
   $info['my_module_room'] = array(
     '#label' => t('Room'),
     '#exposed' => TRUE,
+    '#default_dispatcher' => 'my_module_room',
     '#file' => 'my_module.room.inc',
   );
 

@@ -123,12 +123,14 @@ function emailkit_emailkit_destination_info() {
   // Generic destination type
   $info['emailkit_default'] = array(
     '#label' => t('Generic e-mail destination'),
+    '#default_dispatcher' => 'emailkit_default',
   );
   
   // Single e-mail address destination type
   $info['emailkit_address'] = array(
     '#label' => t('E-mail address'),
     '#exposed' => TRUE,
+    '#default_dispatcher' => 'emailkit_address',
     '#file' => 'emailkit.address.inc',
   );
   
@@ -143,14 +145,14 @@ function emailkit_emailkit_dispatcher_info() {
   
   // Default message dispatcher, which services the default destination type
   $info['emailkit_default'] = array(
-    '#label' => t('Drupal (default)'),
+    '#label' => t('Drupal'),
     '#destinations' => array('emailkit_default'),
     '#file' => 'emailkit.default.inc',
   );
   
   // Dispatcher that services textual e-mail addresses, by forwarding them to the default message dispatcher
   $info['emailkit_address'] = array(
-    '#label' => t('Readdress as a generic e-mail destination (default)'),
+    '#label' => t('Readdress as a generic e-mail destination'),
     '#destinations' => array('emailkit_address'),
     '#file' => 'emailkit.address.inc',
   );
@@ -233,45 +235,6 @@ function emailkit_destination_form($type) {
   }
   
   return $form;
-}
-
-/**
- * Returns the name of the dispatcher that services the destination type with the given name.
- *
- * @param $type The destination type to find a dispatcher for.
- *
- * @return The name of a dispatcher.
- */
-// TODO: Rewrite this function to allow users to configure the dispatcher to use per message type
-function emailkit_destination_dispatcher($type) {
-  if (!isset($type)) {
-    return NULL;
-  }
-
-  // Find all dispatchers that service this destination
-  $potential_dispatcher_names = array();
-  $dispatchers = emailkit_dispatcher_info();
-  foreach ($dispatchers as $dispatcher_name => $dispatcher_info) {
-    if (in_array($type, $dispatcher_info['#destinations'])) {
-      $potential_dispatcher_names[] = $dispatcher_name;
-    }
-  }
-  
-  if (empty($potential_dispatcher_names)) {
-    return NULL;
-  }
-  
-  // Check if we have a configured dispatcher
-  $configured_dispatcher_name = variable_get('emailkit_destination_dispatcher_' . $type, NULL);
-
-  // If the configured dispatcher is sound, return it
-  if (isset($configured_dispatcher_name) && in_array($configured_dispatcher_name, $potential_dispatcher_names)) {
-    return $configured_dispatcher_name;
-  }
-  // Otherwise, return the first dispatcher we found
-  else {
-    return array_shift($potential_dispatcher_names);
-  }
 }
 
 /**
@@ -363,6 +326,35 @@ function emailkit_message($message_id) {
 }
 
 /**
+ * Returns the name of the dispatcher that services the given message and destination.
+ *
+ * @return The name of a dispatcher.
+ */
+function emailkit_message_dispatcher($message_id, $destination_type) {
+  if (!isset($message_id) || !isset($destination_type)) {
+    return NULL;
+  }
+  
+  // Get information about the destination type
+  $destination_info = emailkit_destination_info($destination_type);
+  if (!isset($destination_info)) {
+    return NULL;
+  }
+  
+  $key = _emailkit_message_dispatcher_variable($message_id, $destination_type);
+  $default = $destination_info['#default_dispatcher'];
+  
+  return variable_get($key, $default);
+}
+
+/**
+ * Private function that returns the name of the variable that stores the dispatcher for the given message and destination.
+ */
+function _emailkit_message_dispatcher_variable($message_id, $destination_type) {
+  return 'emailkit__' . $message_id . '__' . $destination_type . '__dispatcher';
+}
+
+/**
  * Sends the given message to the given destination.
  *
  * @param $message A structured message array.
@@ -382,7 +374,7 @@ function emailkit_send($message, $destination) {
   }
   
   // Find a dispatcher for this destination
-  $dispatcher_name = emailkit_destination_dispatcher($destination['#type']);
+  $dispatcher_name = emailkit_message_dispatcher($message['#message_id'], $destination['#type']);
   if (!isset($dispatcher_name)) {
     return FALSE;
   }

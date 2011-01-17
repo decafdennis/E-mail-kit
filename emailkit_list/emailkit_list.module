@@ -201,6 +201,7 @@ function emailkit_list_emailkit_destination_info() {
   $info['emailkit_list'] = array(
     '#label' => t('E-mail list'),
     '#exposed' => TRUE,
+    '#default_dispatcher' => 'emailkit_list',
     '#file' => 'emailkit_list.inc',
   );
   
@@ -214,7 +215,7 @@ function emailkit_list_emailkit_dispatcher_info() {
   $info = array();
 
   $info['emailkit_list'] = array(
-    '#label' => t('Readdress as a generic e-mail destination (default)'),
+    '#label' => t('Readdress as a generic e-mail destination'),
     '#destinations' => array('emailkit_list'),
     '#file' => 'emailkit_list.inc',
   );

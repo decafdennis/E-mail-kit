@@ -45,13 +45,58 @@ function emailkit_admin_message_type_edit($message_type) {
  * Returns a form for editing the given message type.
  */
 function emailkit_admin_message_type_form(&$form_state, $message_type) {
+  $message_id = $message_type['#id'];
+  
   $form = array(
     '#message_type' => $message_type,
   );
 
-  // TODO: Build form
+  // Build fieldset for choosing dispatchers for destinations
+  $form['dispatcher'] = array();
+  $destinations = emailkit_destination_info();
+  $dispatchers = emailkit_dispatcher_info();
+  foreach ($destinations as $destination_type => $destination_info) {
+    $default = $destination_info['#default_dispatcher'];
+    
+    // Build an array of possible dispatchers for this destination
+    $options = array();
+    foreach ($dispatchers as $dispatcher_name => $dispatcher_info) {
+      if (in_array($destination_type, $dispatcher_info['#destinations'])) {
+        $label = $dispatcher_info['#label'];
+        
+        // Add "(default)" to indicate the default dispatcher
+        if ($dispatcher_name == $default) {
+          $label .= ' (' . t('default') . ')';
+        }
+        
+        $options[$dispatcher_name] = $label;
+      }
+    }
 
-  return $form;
+    // Skip this destination type if there is nothing to choose
+    if (count($options) <= 1) {
+      continue;
+    }
+
+    $key = _emailkit_message_dispatcher_variable($message_id, $destination_type);
+    $form['dispatcher'][$key] = array(
+      '#type' => 'radios',
+      '#title' => $destination_info['#label'],
+      '#options' => $options,
+      '#default_value' => emailkit_message_dispatcher($message_id, $destination_type),
+    );
+  }
+  
+  // If there are any dispatcher fields, surround them with a fieldset
+  if (!empty($form['dispatcher'])) {
+    $form['dispatcher'] += array(
+      '#type' => 'fieldset',
+      '#title' => t('Dispatchers'),
+      '#description' => t('Some kind of destinations can be serviced by more than one dispatcher. Choose the dispatcher to use for those destinations below.'),
+    );
+  }
+
+  return system_settings_form($form);
 }
 
 /**
@@ -85,7 +130,6 @@ function theme_emailkit_admin_message_type_list($message_types) {
             'class' => 'name',
             'data' => check_plain($message_info['#label']),
           ),
-          // TODO: Implement a callback for this path
           l(t('edit'), 'admin/emailkit/messages/' . $message_id . '/edit', array('query' => drupal_get_destination())),
         ),
       );
