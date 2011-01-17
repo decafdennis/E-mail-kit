@@ -1,0 +1,13 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function emailkit_uninstall() {
+  // Delete all variables associated with this module
+  $result = db_query("SELECT name FROM {variable} WHERE name LIKE 'emailkit\\_\\_%'");
+  while ($name = db_result($result)) {
+    variable_del($name);
+  }
+}
