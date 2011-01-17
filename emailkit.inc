@@ -17,10 +17,26 @@ function _emailkit_entity_info($domain, $identifier = NULL, $reset = FALSE) {
   if (!isset($info[$domain]) || $reset) {
     $info[$domain] = array();
 
-    // Determine domain-specific entity defaults
-    $defaults_function = '_emailkit_' . $domain . '_info_defaults';
-    if (function_exists($defaults_function)) {
-      $defaults = call_user_func($defaults_function);
+    // Determine domain info
+    $domain_info_function = '_emailkit_' . $domain . '_domain_info';
+    if (function_exists($domain_info_function)) {
+      $domain_info = call_user_func($domain_info_function);
+    }
+    else {
+      $domain_info = array();
+    }
+    
+    // Determine entity identifier key
+    if (isset($domain_info['#identifier'])) {
+      $identifier_key = $domain_info['#identifier'];
+    }
+    else {
+      $identifier_key = '#identifier';
+    }
+    
+    // Determine entity defaults
+    if (isset($domain_info['#defaults'])) {
+      $defaults = $domain_info['#defaults'];
     }
     else {
       $defaults = array();
@@ -32,7 +48,8 @@ function _emailkit_entity_info($domain, $identifier = NULL, $reset = FALSE) {
       $module_info = module_invoke($module, $hook);
 
       foreach ($module_info as $entity_identifier => $entity_info) {
-        // Force the #module parameter
+        // Force the identifier and module parameters
+        $entity_info[$identifier_key] = $entity_identifier;
         $entity_info['#module'] = $module;
         
         // Add the domain-specific entity defaults as well as the general defaults

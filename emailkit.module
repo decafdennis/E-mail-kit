@@ -151,10 +151,13 @@ function emailkit_destination_info($type = NULL, $reset = FALSE) {
 /**
  * Private function used by _emailkit_entity_info that provides default values for destination types.
  */
-function _emailkit_destination_info_defaults() {
+function _emailkit_destination_domain_info() {
   return array(
-    '#label' => t('(Unlabeled)'),
-    '#exposed' => FALSE,
+    '#identifier' => '#type',
+    '#defaults' => array(
+      '#label' => t('(Unlabeled)'),
+      '#exposed' => FALSE,
+    ),
   );
 }
 
@@ -264,10 +267,13 @@ function emailkit_dispatcher_info($name = NULL, $reset = FALSE) {
 /**
  * Private function used by _emailkit_entity_info that provides default values for dispatchers.
  */
-function _emailkit_dispatcher_info_defaults() {
+function _emailkit_dispatcher_domain_info() {
   return array(
-    '#label' => t('(Unlabeled)'),
-    '#destinations' => array(),
+    '#identifier' => '#name',
+    '#defaults' => array(
+      '#label' => t('(Unlabeled)'),
+      '#destinations' => array(),
+    ),
   );
 }
 
@@ -287,9 +293,12 @@ function emailkit_message_info($id = NULL, $reset = FALSE) {
 /**
  * Private function used by _emailkit_entity_info that provides default values for message types.
  */
-function _emailkit_message_info_defaults() {
+function _emailkit_message_domain_info() {
   return array(
-    '#label' => t('(Unlabeled)'),
+    '#identifier' => '#id',
+    '#defaults' => array(
+      '#label' => t('(Unlabeled)'),
+    ),
   );
 }
 
