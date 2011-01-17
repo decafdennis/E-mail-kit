@@ -49,7 +49,7 @@ function emailkit_node_emailkit_message_info() {
   $info = array();
 
   $info['emailkit_node'] = array(
-    '#label' => t('Node'),
+    '#label' => t('Content'),
     '#file' => 'emailkit_node.inc',
   );
   
