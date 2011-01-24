@@ -1,6 +1,8 @@
 Next
 ====
 
+* E-mail formatting
+* CAN-SPAM compliance
 * Statistics module that can be enabled per message type
 	* Sent (how many, when)
 	* Opened (how many, when, hook)
