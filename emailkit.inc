@@ -225,10 +225,12 @@ function _emailkit_message_render($message, $format) {
 function _emailkit_resolve_urls($html) {
   // Find all tags with a href or src attribute containing a URL that starts with the base path (which is always at least /)
   $pattern = '/(<[^>]+?(?:href|src)=")' . preg_quote(base_path(), '/') . '([^"]*"[^>]*?>)/';
-  return preg_replace_callback($pattern, function($match) {
-    global $base_url;
+  return preg_replace_callback($pattern, '_emailkit_resolve_url', $html);
+}
 
-    // Replace the base path with the base URL
-    return $match[1] . $base_url . '/' . $match[2];
-  }, $html);
+function _emailkit_resolve_url($match) {
+  global $base_url;
+
+  // Replace the base path with the base URL
+  return $match[1] . $base_url . '/' . $match[2];
 }

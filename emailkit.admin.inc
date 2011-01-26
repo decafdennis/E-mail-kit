@@ -25,12 +25,14 @@ function emailkit_admin_message_type_list() {
     $message_types_by_module[$module]['#message_types'][$message_id] = $message_info;
   }
 
-  // Sort by module name (closures FTW!)
-  uksort($message_types_by_module, function($a, $b) {
-    return strcasecmp($a['#name'], $b['#name']);
-  });
+  // Sort by module name
+  uksort($message_types_by_module, '_emailkit_admin_message_type_list_sort_by_name');
 
   return theme('emailkit_admin_message_type_list', $message_types_by_module);
+}
+
+function _emailkit_admin_message_type_list_sort_by_name($a, $b) {
+  return strcasecmp($a['#name'], $b['#name']);
 }
 
 /**
