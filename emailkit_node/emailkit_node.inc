@@ -8,9 +8,9 @@
 function emailkit_node_message($message_id, $node) {
   return array(
     '#subject' => $node->title,
-    '#body' => array(
+    'content' => array(
       'node' => array(
-        '#value' => $node->teaser,
+        '#value' => node_view($node),
       ),
     ),
   );

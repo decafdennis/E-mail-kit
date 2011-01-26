@@ -1,7 +1,6 @@
 Next
 ====
 
-* Sending proper MIME multipart/alternative messages
 * CAN-SPAM compliance
 * Statistics module that can be enabled per message type
 	* Sent (how many, when)

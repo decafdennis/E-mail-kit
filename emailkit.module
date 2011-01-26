@@ -333,7 +333,7 @@ function emailkit_message($message_id) {
  * @param $message A structured message as returned by emailkit_message().
  * @param $format The format to render the message in. Can be either EMAILKIT_MESSAGE_FORMAT_HTML or EMAILKIT_MESSAGE_FORMAT_TEXT.
  *
- * @return A string containing the message body in HTML or plain text format.
+ * @return A string containing the message body in HTML (text/html; charset="utf-8") or plain text format (text/plain; charset="utf-8"; format=flowed; delsp=yes). Both will have LF line endings.
  */
 function emailkit_message_render($message, $format) {
   if (!isset($message)) {
