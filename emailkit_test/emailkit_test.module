@@ -19,7 +19,20 @@ function emailkit_test_emailkit_dispatcher_info() {
  * Implementation of hook_dispatcher_send() for the emailkit_test dispatcher.
  */
 function emailkit_test_dispatcher_send($dispatcher, $message, $destination) {
-  drupal_set_message(t("The following message was supposed to be dispatched to the following destination:\n!message!destination", array('!message' => print_r($message, TRUE), '!destination' => print_r($destination, TRUE))));
-  
+  drupal_set_message(t("The following message was supposed to be dispatched to the following destination:\n<pre>!message</pre>\n<pre>!destination</pre>", array('!message' => print_r($message, TRUE), '!destination' => print_r($destination, TRUE))));
+
+  drupal_set_message('<div>' . emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_HTML) . '</div>');
+  drupal_set_message('<pre>' . check_plain(emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT)) . '</pre>');
+
   return TRUE;
+}
+
+/**
+ * Implementation of hook_emailkit_message_build().
+ */
+function emailkit_test_emailkit_message_build($message_id, &$message) {
+  $message['footer']['test'] = array(
+    '#value' => '<p>' . t('This message was sent for testing purposes only.') . '</p>',
+    '#weight' => 100,
+  );
 }

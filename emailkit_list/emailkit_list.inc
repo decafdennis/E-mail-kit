@@ -317,14 +317,45 @@ function emailkit_list_confirmation_send($address, $lids) {
  * Implementation of hook_message() for the emailkit_list_confirmation message.
  */
 function emailkit_list_confirmation_message($message_id, $address, $lids) {
-  return array(
+  $message = array(
     '#subject' => t('Confirm your subscriptions'),
-    '#body' => array(
-      'link' => array(
-        '#value' => emailkit_list_confirmation_url($address, $lids),
-      ),
-    ),
   );
+  
+  if (empty($lids)) {
+    $message['content']['subscription_info'] = array(
+      '#value' => '<p>' . t('You have requested to be unsubscribed.') . '</p>',
+    );
+  }
+  else {
+    $items = array();
+    $lists = emailkit_list_load_all();
+    foreach ($lids as $lid) {
+      $items[] = $lists[$lid]->name;
+    }
+    
+    $message['content']['subscription_info'] = array(
+      '#value' => '<p>' . t('You have requested to be subscribed to the following lists:') . '</p>',
+    );
+    
+    $message['content']['subscription_list'] = array(
+      '#value' => theme('item_list', $items),
+    );
+  }
+  
+  $message['content']['confirmation_link'] = array(
+    '#value' => '<p>' . l(t('Confirm your subscriptions'), emailkit_list_confirmation_url($address, $lids)) . '</p>',
+  );
+
+  $rationale_replacements = array(
+    '!site_name' => l(variable_get('site_name', 'Drupal'), '<front>'),
+    '!contact_us' => l(t('contact us'), 'mailto:' . variable_get('site_mail', ini_get('sendmail_from'))),
+  );
+  
+  $message['footer']['rationale'] = array(
+    '#value' => '<p>' . t('You are receiving this one-time message because you have requested to update your subscriptions via our website !site_name. If you have not requested to update your subscriptions, please ignore this message or !contact_us to resolve the problem.', $rationale_replacements) . '</p>',
+  );
+  
+  return $message;
 }
 
 /**

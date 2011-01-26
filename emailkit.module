@@ -2,6 +2,16 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * Defines the HTML format.
+ */
+define('EMAILKIT_MESSAGE_FORMAT_HTML', 0);
+
+/**
+ * Defines the plain text format.
+ */
+define('EMAILKIT_MESSAGE_FORMAT_TEXT', 1);
+
+/**
  * Implementation of hook_perm().
  */
 function emailkit_perm() {
@@ -76,6 +86,8 @@ function emailkit_help($path, $arg) {
 function emailkit_elements() {
   $elements = array();
   
+  $elements['emailkit_message'] = array();
+  
   $elements['emailkit_destination_select'] = array(
     '#input' => TRUE,
     '#process' => array('_emailkit_destination_select_process'),
@@ -90,6 +102,13 @@ function emailkit_elements() {
  */
 function emailkit_theme() {
   $theme = array();
+  
+  $theme['emailkit_message'] = array(
+    'arguments' => array(
+      'message' => array(),
+    ),
+    'template' => 'emailkit_message',
+  );
   
   $theme['emailkit_destination_select'] = array(
     'arguments' => array(
@@ -301,28 +320,30 @@ function emailkit_message($message_id) {
     return NULL;
   }
   
-  // Get information about the message type
-  $info = emailkit_message_info($message_id);
-  if (!isset($info)) {
-    return NULL;
-  }
-    
   module_load_include('inc', 'emailkit', 'emailkit');
   
-  // Get the message
-  $function = _emailkit_entity_info_hook($info, 'message');
+  // Pass on the message
   $args = func_get_args();
-  $message = call_user_func_array($function, $args);
+  return call_user_func_array('_emailkit_message', $args);
+}
 
-  // If we have a message, adapt a few of its properties
-  if (isset($message)) {
-    // Set #message_id if it hasn't been set already
-    if (!isset($form['#message_id'])) {
-      $message['#message_id'] = $message_id;
-    }
+/**
+ * Renders the body of the given message in the given format.
+ *
+ * @param $message A structured message as returned by emailkit_message().
+ * @param $format The format to render the message in. Can be either EMAILKIT_MESSAGE_FORMAT_HTML or EMAILKIT_MESSAGE_FORMAT_TEXT.
+ *
+ * @return A string containing the message body in HTML or plain text format.
+ */
+function emailkit_message_render($message, $format) {
+  if (!isset($message)) {
+    return NULL;
   }
   
-  return $message;
+  module_load_include('inc', 'emailkit', 'emailkit');
+  
+  // Pass on the message
+  return _emailkit_message_render($message, $format);
 }
 
 /**
@@ -374,7 +395,7 @@ function emailkit_send($message, $destination) {
   }
   
   // Find a dispatcher for this destination
-  $dispatcher_name = emailkit_message_dispatcher($message['#message_id'], $destination['#type']);
+  $dispatcher_name = emailkit_message_dispatcher($message['#id'], $destination['#type']);
   if (!isset($dispatcher_name)) {
     return FALSE;
   }
