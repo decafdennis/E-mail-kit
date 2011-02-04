@@ -43,6 +43,33 @@ function emailkit_node_access($node) {
 }
 
 /**
+ * Implementation of hook_elements().
+ */
+function emailkit_node_elements() {
+  $elements = array();
+  
+  $elements['emailkit_node'] = array();
+  
+  return $elements;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function emailkit_node_theme() {
+  $theme = array();
+  
+  $theme['emailkit_node'] = array(
+    'arguments' => array(
+      'element' => array(),
+    ),
+    'file' => 'emailkit_node.inc',
+  );
+
+  return $theme;
+}
+
+/**
  * Implementation of emailkit_emailkit_message_info().
  */
 function emailkit_node_emailkit_message_info() {
