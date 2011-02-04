@@ -26,27 +26,46 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
   // Create the multipart containing the alternatives
   $alternative_boundary = _emailkit_mime_content_boundary();
   $alternative_multipart = _emailkit_mime_multipart_alternative($alternative_boundary, array($text_part, $html_part));
-
-  // Create an array suitable for drupal_mail_send()
-  $mail = array(
-    'from' => variable_get('site_mail', ini_get('sendmail_from')),
-    'subject' => $message['#subject'],
-    'headers' => array(
-      'MIME-Version' => '1.0',
-      'Content-Type' => 'multipart/alternative; boundary="' . $alternative_boundary . '"',
-      'X-Mailer' => 'E-mail kit (Drupal)',
-    ),
-    'body' => $alternative_multipart,
-  );
   
-  // Process the destination
+  // Prepare the origin
+  $from = variable_get('site_mail', ini_get('sendmail_from'));
+
+  // Prepare the destination
+  // TODO: Don't put all recipients in the To field
   $to_array = array();
   foreach ($destination['#recipients'] as $recipient) {
     $to_array[] = $recipient['address'];
   }
-  $mail['to'] = implode(", ", $to_array);
+  
+  $to = implode(", ", $to_array);
+  
+  // Prepare the subject
+  $subject = mime_header_encode($message['#subject']);
+  
+  // Prepare the body
+  // Note: mail() wants LF line endings instead of CRLF
+  $body = str_replace("\r", '', $alternative_multipart);
+  
+  // Prepare the headers
+  $headers_array = array(
+    'From' => $from,
+    'Sender' => $from,
+    'Return-Path' => $from,
+    'Errors-To' => $from,
+    'MIME-Version' => '1.0',
+    'Content-Type' => 'multipart/alternative; boundary="' . $alternative_boundary . '"',
+    'X-Mailer' => 'E-mail kit (Drupal)',
+  );
+  
+  $headers_encoded = array();
+  foreach ($headers_array as $key => $value) {
+    $headers_encoded[] = $key . ': ' . mime_header_encode($value);
+  }
+  
+  // Note: follow drupal_mail_send()'s recommendation of using LF
+  $headers = implode("\n", $headers_encoded);
 
-  return drupal_mail_send($mail);
+  return mail($to, $subject, $body, $headers);
 }
 
 /**
