@@ -157,13 +157,18 @@ function _emailkit_message($message_id) {
     return NULL;
   }
   
-  // Allow other modules to add their elements to the message
+  // Set default message regions
+  $message['header']['#weight'] = -0.1;
+  $message['content']['#weight'] = 0;
+  $message['footer']['#weight'] = 0.1;
+  
+  // Allow other modules to add their stuff to the message
   foreach (module_implements('emailkit_message_build') as $module) {
     $function = $module . '_emailkit_message_build';
     $function($message_id, $message);
   }
-
-  // Give all modules a last chance to alter the message
+  
+  // Allow all modules to alter the message
   foreach (module_implements('emailkit_message_alter') as $module) {
     $function = $module . '_emailkit_message_alter';
     $function($message_id, $message);

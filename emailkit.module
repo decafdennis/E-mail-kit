@@ -408,6 +408,12 @@ function emailkit_send($message, $destination) {
     return FALSE;
   }
 
+  // Give all modules a last chance to alter the message now that we know the destination
+  foreach (module_implements('emailkit_message_send') as $module) {
+    $function = $module . '_emailkit_message_send';
+    $function($message, $destination);
+  }
+
   return $dispatcher_send($dispatcher_name, $message, $destination);
 }
 
