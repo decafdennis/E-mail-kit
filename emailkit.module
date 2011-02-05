@@ -145,6 +145,12 @@ function emailkit_emailkit_destination_info() {
     '#default_dispatcher' => 'emailkit_default',
   );
   
+  // Internet Message Format (RFC 2822) Address Specification destination type
+  $info['emailkit_imf'] = array(
+    '#label' => t('Internet Message Format address specification'),
+    '#default_dispatcher' => 'emailkit_default',
+  );
+  
   // Single e-mail address destination type
   $info['emailkit_address'] = array(
     '#label' => t('E-mail address'),
@@ -162,11 +168,11 @@ function emailkit_emailkit_destination_info() {
 function emailkit_emailkit_dispatcher_info() {
   $info = array();
   
-  // Default message dispatcher, which services the default destination type
+  // Default message dispatcher, which services the default and IMF destination types
   $info['emailkit_default'] = array(
-    '#label' => t('Drupal'),
-    '#destinations' => array('emailkit_default'),
-    '#file' => 'emailkit.default.inc',
+    '#label' => t('PHP'),
+    '#destinations' => array('emailkit_default', 'emailkit_imf'),
+    '#file' => 'emailkit.inc',
   );
   
   // Dispatcher that services textual e-mail addresses, by forwarding them to the default message dispatcher
@@ -176,6 +182,21 @@ function emailkit_emailkit_dispatcher_info() {
     '#file' => 'emailkit.address.inc',
   );
   
+  return $info;
+}
+
+/**
+ * Implementation of hook_emailkit_message_info().
+ */
+function emailkit_emailkit_message_info() {
+  $info = array();
+
+  // Message identifier used for messages coming in through drupal_mail_wrapper()
+  $info['emailkit_drupal'] = array(
+    '#label' => t('Drupal'),
+    '#file' => 'emailkit.drupal.inc',
+  );
+
   return $info;
 }
 
