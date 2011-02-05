@@ -36,6 +36,14 @@ function emailkit_menu() {
     'file path' => drupal_get_path('module', 'system'),
   );
 
+  $items['admin/emailkit/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Control the general behavior of E-mail kit.',
+    'page callback' => 'emailkit_admin_settings',
+    'access arguments' => array('administer e-mail kit'),
+    'file' => 'emailkit.admin.inc',
+  );
+
   $items['admin/emailkit/messages'] = array(
     'title' => 'Messages',
     'description' => 'Control the behavior of different kinds of messages.',
