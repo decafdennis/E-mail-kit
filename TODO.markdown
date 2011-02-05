@@ -1,6 +1,8 @@
 Next
 ====
 
+* Less primitive drupal_mail_wrapper()
+* CSS style inlining
 * CAN-SPAM compliance
 * Statistics module that can be enabled per message type
 	* Sent (how many, when)
