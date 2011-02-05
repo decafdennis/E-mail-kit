@@ -19,7 +19,7 @@ function emailkit_node_perm() {
 function emailkit_node_menu() {
   $items = array();
 
-  $items['node/%node/email'] = array(
+  $items['node/%node/message'] = array(
     'title' => 'E-mail',
     'page callback' => 'emailkit_node_email',
     'page arguments' => array(1),
