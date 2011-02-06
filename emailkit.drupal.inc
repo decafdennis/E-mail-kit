@@ -19,13 +19,24 @@ function drupal_mail_wrapper($drupal_message) {
  * Implementation of hook_message() for the emailkit_drupal message.
  */
 function emailkit_drupal_message($message_id, $drupal_message) {
+  $body = $drupal_message['body'];
+  $content_type = isset($drupal_message['headers']['Content-Type']) ? $drupal_message['headers']['Content-Type'] : 'text/plain';
+
+  // If the body is plain text, convert it to HTML
+  if (strpos($content_type, 'text/plain') !== FALSE) {
+    // Apply the line break filter
+    $body = _filter_autop($body);
+    
+    // Apply the URL filter
+    $body = _filter_url($body, '__emailkit_foo');
+  }
+  
   // TODO: Process custom headers in $drupal_message
   return array(
     '#subject' => $drupal_message['subject'],
     'content' => array(
       'body' => array(
-        // TODO: Less primitive way of converting Drupal's plain text messages to HTML
-        '#value' => '<pre>' . $drupal_message['body'] . '</pre>',
+        '#value' => $body,
       ),
     ),
   );
