@@ -37,20 +37,6 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
   // Prepare the origin
   $from = variable_get('site_mail', ini_get('sendmail_from'));
 
-  // Prepare the destination
-  if ($destination['#type'] == 'emailkit_imf') {
-    $to = $destination['#to'];
-  }
-  else {
-    // TODO: Don't simply put all recipients in the To field
-    $to_array = array();
-    foreach ($destination['#recipients'] as $recipient) {
-      $to_array[] = $recipient['address'];
-    }
-
-    $to = implode(", ", $to_array);
-  }
-
   // Prepare the headers
   $headers = array(
     'From' => $from,
@@ -60,6 +46,24 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
     'MIME-Version' => '1.0',
     'Content-Type' => 'multipart/alternative; boundary="' . $boundary . '"',
   );
+
+  // Prepare the destination
+  if ($destination['#type'] == 'emailkit_imf') {
+    $to = $destination['#to'];
+  }
+  else if (count($destination['#recipients']) == 1) {
+    $recipient = array_shift($destination['#recipients']);
+    $to = $recipient['address'];
+  }
+  else {
+    $to = 'Undisclosed Recipients:;';
+    
+    $bcc = array();
+    foreach ($destination['#recipients'] as $recipient) {
+      $bcc[] = $recipient['address'];
+    }
+    $headers['Bcc'] = implode(", ", $bcc);
+  }
 
   return _emailkit_mail($to, $message['#subject'], $body, $headers);
 }
