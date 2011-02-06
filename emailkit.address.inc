@@ -9,6 +9,8 @@
  * Implementation of hook_destination_form() for the emailkit_address destination type.
  */
 function emailkit_address_destination_form($destination_type) {
+  global $user;
+  
   $form = array();
   
   // Allow the user to enter an e-mail address
@@ -17,6 +19,7 @@ function emailkit_address_destination_form($destination_type) {
     '#title' => t('E-mail address'),
     '#description' => t('The address to which to send the e-mail. Example: john@example.com'),
     '#required' => TRUE,
+    '#default_value' => $user->mail,
   );
   
   return $form;
