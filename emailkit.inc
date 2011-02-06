@@ -31,6 +31,9 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
   $boundary = _emailkit_mime_content_boundary();
   $body = _emailkit_mime_multipart_alternative($boundary, array($text_part, $html_part));
   
+  // Prepend a message for clients that don't support MIME
+  $body = "This is a message in MIME format.  If you see this, your e-mail client does not support this format.\n\n$body";
+  
   // Prepare the origin
   $from = variable_get('site_mail', ini_get('sendmail_from'));
 
