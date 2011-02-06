@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains functions related to users.
+ */
+
+/**
  * Returns the form elements that should be injected into the user profile form.
  */
 function emailkit_list_user_form($user) {

@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains functions related to blocks.
+ */
+
+/**
  * Implementation of the view operation for the subscriptions block.
  */
 function emailkit_list_block_subscriptions_view() {

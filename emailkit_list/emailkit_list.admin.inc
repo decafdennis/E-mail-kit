@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains callbacks and related functions for admin pages.
+ */
+
+/**
  * The HTML id used for the lists table.
  */
 define('EMAILKIT_LIST_ADMIN_LIST_FORM_LISTS_ID', 'lists');

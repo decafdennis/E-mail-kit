@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains the code used when emailkit is used as Drupal's mail handler. Specifically, it contains the implementation of drupal_mail_wrapper() and the message hook that builds an emailkit message based on a Drupal message.
+ */
+
+/**
  * Implementation of drupal_mail_wrapper(). See drupal_mail_send().
  */
 function drupal_mail_wrapper($drupal_message) {

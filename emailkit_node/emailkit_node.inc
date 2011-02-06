@@ -1,6 +1,9 @@
 <?php
 // Developed by Dennis Stevense for Digital Deployment
 
+/**
+ * @file This include contains code that can be loaded on-demand.
+ */
 
 /**
  * Implementation of hook_message() for the emailkit_node message.

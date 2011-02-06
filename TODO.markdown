@@ -8,7 +8,7 @@ Next
 	* Opened (how many, when, hook)
 
 Icebox
-===================
+======
 
 * Keep track of subscriber opt in/out history
 * E-mail formatting

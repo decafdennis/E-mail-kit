@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains callbacks and related functions for all emailkit admin pages.
+ */
+
+/**
  * Returns the admin settings page.
  */
 function emailkit_admin_settings() {
@@ -54,13 +58,6 @@ function emailkit_admin_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Private helper function that returns the path to the file that contains our Drupal mail wrapper.
- */
-function _emailkit_smtp_library_path() {
-  return drupal_get_path('module', 'emailkit') . '/emailkit.drupal.inc';
-}
-
-/**
  * Returns the admin page that lists the different message types for the user to configure.
  */
 function emailkit_admin_message_type_list() {
@@ -90,6 +87,9 @@ function emailkit_admin_message_type_list() {
   return theme('emailkit_admin_message_type_list', $message_types_by_module);
 }
 
+/**
+ * Callback for uksort() in emailkit_admin_message_type_list().
+ */
 function _emailkit_admin_message_type_list_sort_by_name($a, $b) {
   return strcasecmp($a['#name'], $b['#name']);
 }
@@ -98,7 +98,6 @@ function _emailkit_admin_message_type_list_sort_by_name($a, $b) {
  * Returns a page for editing the given message type.
  */
 function emailkit_admin_message_type_edit($message_type) {
-  // Note: I know we could've just set the menu callback to drupal_get_form with emailkit_admin_message_type_form as an argument, but I believe that this determination should be made here, not in hook_menu()
   return drupal_get_form('emailkit_admin_message_type_form', $message_type);
 }
 
@@ -114,6 +113,7 @@ function emailkit_admin_message_type_form(&$form_state, $message_type) {
 
   // Build fieldset for choosing dispatchers for destinations
   $form['dispatcher'] = array();
+  
   $destinations = emailkit_destination_info();
   $dispatchers = emailkit_dispatcher_info();
   foreach ($destinations as $destination_type => $destination_info) {
@@ -227,4 +227,11 @@ function _emailkit_module_name($module) {
   }
   
   return $module;
+}
+
+/**
+ * Returns the path to the file that contains our Drupal mail wrapper.
+ */
+function _emailkit_smtp_library_path() {
+  return drupal_get_path('module', 'emailkit') . '/emailkit.drupal.inc';
 }

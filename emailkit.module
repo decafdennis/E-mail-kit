@@ -2,12 +2,12 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
- * Defines the HTML format.
+ * Defines the format with content type text/html; charset=utf-8.
  */
 define('EMAILKIT_MESSAGE_FORMAT_HTML', 0);
 
 /**
- * Defines the plain text format.
+ * Defines the format with content type text/plain; charset=utf-8; format=flowed; delsp=yes.
  */
 define('EMAILKIT_MESSAGE_FORMAT_TEXT', 1);
 
@@ -28,6 +28,7 @@ function emailkit_perm() {
 function emailkit_menu() {
   $items = array();
 
+  // Root page for all pages related to emailkit
   $items['admin/emailkit'] = array(
     'title' => 'E-mail kit',
     'page callback' => 'system_admin_menu_block_page',
@@ -36,6 +37,7 @@ function emailkit_menu() {
     'file path' => drupal_get_path('module', 'system'),
   );
 
+  // General settings page
   $items['admin/emailkit/settings'] = array(
     'title' => 'Settings',
     'description' => 'Control the general behavior of E-mail kit.',
@@ -44,6 +46,7 @@ function emailkit_menu() {
     'file' => 'emailkit.admin.inc',
   );
 
+  // Pages for customizing message types
   $items['admin/emailkit/messages'] = array(
     'title' => 'Messages',
     'description' => 'Control the behavior of different kinds of messages.',
@@ -93,9 +96,11 @@ function emailkit_help($path, $arg) {
  */
 function emailkit_elements() {
   $elements = array();
-  
+
+  // E-mail messages are structured arrays with #type emailkit_message
   $elements['emailkit_message'] = array();
-  
+
+  // Form element that can be used to specify a destination by selecting and configuring one of the exposed destination types
   $elements['emailkit_destination_select'] = array(
     '#input' => TRUE,
     '#process' => array('_emailkit_destination_select_process'),
@@ -110,31 +115,23 @@ function emailkit_elements() {
  */
 function emailkit_theme() {
   $theme = array();
-  
+
   $theme['emailkit_message'] = array(
-    'arguments' => array(
-      'message' => array(),
-    ),
+    'arguments' => array('message' => array()),
     'template' => 'emailkit_message',
   );
   
   $theme['emailkit_destination_select'] = array(
-    'arguments' => array(
-      'element' => array(),
-    ),
+    'arguments' => array('element' => array()),
     'file' => 'emailkit.destination_select.inc',
   );
   $theme['emailkit_destination_select_children'] = array(
-    'arguments' => array(
-      'element' => array(),
-    ),
+    'arguments' => array('element' => array()),
     'file' => 'emailkit.destination_select.inc',
   );
   
   $theme['emailkit_admin_message_type_list'] = array(
-    'arguments' => array(
-      'message_types' => array(),
-    ),
+    'arguments' => array('message_types' => array()),
     'file' => 'emailkit.admin.inc',
   );
   
@@ -360,9 +357,9 @@ function emailkit_message($message_id) {
  * Renders the body of the given message in the given format.
  *
  * @param $message A structured message as returned by emailkit_message().
- * @param $format The format to render the message in. Can be either EMAILKIT_MESSAGE_FORMAT_HTML or EMAILKIT_MESSAGE_FORMAT_TEXT.
+ * @param $format The format to render the message in. Can be EMAILKIT_MESSAGE_FORMAT_HTML or EMAILKIT_MESSAGE_FORMAT_TEXT.
  *
- * @return A string containing the message body in HTML (text/html; charset="utf-8") or plain text format (text/plain; charset="utf-8"; format=flowed; delsp=yes). Both will have LF line endings.
+ * @return A string containing the message rendered in the given format with LF line endings.
  */
 function emailkit_message_render($message, $format) {
   if (!isset($message)) {
@@ -491,18 +488,6 @@ function _emailkit_destination_select_after_build($element) {
   module_load_include('inc', 'emailkit', 'emailkit.destination_select');
   
   return emailkit_destination_select_after_build($element);
-}
-
-/**
- * Private helper function that marks the given element and all its children as having been validated.
- */
-function _emailkit_element_set_validated(&$element) {
-  $element['#validated'] = TRUE;
-  
-  // Recurse
-  foreach (element_children($element) as $key) {
-    _emailkit_element_set_validated($element[$key]);
-  }
 }
 
 /**

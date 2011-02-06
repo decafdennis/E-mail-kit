@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains code that does not need to be in the main module file and can be loaded on-demand.
+ */
+
+/**
  * Returns a new unsaved list with default values.
  */
 function emailkit_list_new() {

@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains all code dealing with the emailkit_destination_select form element.
+ */
+
+/**
  * Processes and returns the given destination selection element.
  */
 function emailkit_destination_select_process($element) {
@@ -79,4 +83,16 @@ function theme_emailkit_destination_select_children($element) {
   $output .= '</dl>';
 
   return $output;
+}
+
+/**
+ * Private helper function that marks the given element and all its children as having been validated.
+ */
+function _emailkit_element_set_validated(&$element) {
+  $element['#validated'] = TRUE;
+  
+  // Recurse
+  foreach (element_children($element) as $key) {
+    _emailkit_element_set_validated($element[$key]);
+  }
 }

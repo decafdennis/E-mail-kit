@@ -59,10 +59,9 @@ function emailkit_node_elements() {
 function emailkit_node_theme() {
   $theme = array();
   
+  // Should be overridden by themes that wish to customize the rendering of nodes in messages
   $theme['emailkit_node'] = array(
-    'arguments' => array(
-      'element' => array(),
-    ),
+    'arguments' => array('element' => array()),
     'file' => 'emailkit_node.inc',
   );
 

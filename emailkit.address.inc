@@ -2,6 +2,10 @@
 // Developed by Dennis Stevense for Digital Deployment
 
 /**
+ * @file This include contains implementations for the hooks of the emailkit_address destination and dispatcher.
+ */
+
+/**
  * Implementation of hook_destination_form() for the emailkit_address destination type.
  */
 function emailkit_address_destination_form($destination_type) {
