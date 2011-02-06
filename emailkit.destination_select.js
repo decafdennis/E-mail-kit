@@ -16,6 +16,9 @@ Drupal.emailkitDestinationSelect = function(items) {
   var self = this;
   this.items = items;
   
+  // Wrap the content of definitions in divs without margins and paddings to make the sliding animation look better
+  $('dd', items).wrapInner('<div class="emailkit-animation" />');
+  
   // Find all terms, which contain the radio fields
   $('dt', items).each(function() {
     var itemTerm = $(this);
@@ -73,13 +76,26 @@ Drupal.emailkitDestinationSelect.prototype.updateItems = function(selectedItemCl
   
   $('dd', self.items).each(function() {
     var itemDefinition = $(this);
-    
-    // TODO: Animation
+    var itemDefinitionAnimation = $('.emailkit-animation', itemDefinition);
+
     if (selectedItemClassName != null && itemDefinition.hasClass(selectedItemClassName)) {
-      itemDefinition.show();
+      itemDefinitionAnimation.css('opacity', 1);
+      
+      if (animated) {
+        itemDefinitionAnimation.animate({ height: 'show' }, 'fast');
+      }
+      else {
+        itemDefinitionAnimation.show();
+      }
     }
     else {
-      itemDefinition.hide();
+      if (animated) {
+        itemDefinitionAnimation.animate({ opacity: 0, height: 'hide' }, 'fast');
+      }
+      else {
+        itemDefinitionAnimation.hide();
+        itemDefinitionAnimation.css('opacity', 0);
+      }
     }
   });
 }

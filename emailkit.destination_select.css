@@ -8,6 +8,21 @@ dl.emailkit-destination-select-items dt {
   margin: 1em 0;
 }
 
+dl.emailkit-destination-select-items dt .form-item {
+  margin: 0;
+}
+
 dl.emailkit-destination-select-items dd {
   margin: 1em 0 2em 2em;
+}
+
+html.js dl.emailkit-destination-select-items dt {
+  /* Reduce bottom margin, since a lot of spacing is introduced by a definition element below */
+  margin-bottom: 0;
+}
+
+html.js dl.emailkit-destination-select-items dd {
+  /* Ensure all margins on child elements are kept inside our bounds, so that we animate nicely */
+  margin: 0 0 1em 2em;
+  padding: 1px 0;
 }
