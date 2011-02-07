@@ -10,25 +10,46 @@
  *
  * @return An absolute URL.
  */
-function emailkit_statistics_url() {
-  return url('emailkit/statistics', array('absolute' => TRUE));
+function emailkit_statistics_url($query) {
+  // TODO: Include some kind of hash to prevent tampering with the URL?
+  return url('emailkit/statistics', array('query' => $query, 'absolute' => TRUE));
 }
 
 /**
  * Callback for the URL used for keeping statistics on a message.
  */
 function emailkit_statistics_page() {
-  // TODO: Tally this callback
-  watchdog('emailkit_statistics', t('A message has been viewed.'));
+  $type = isset($_GET['type']) ? $_GET['type'] : NULL;
   
-  // Suppress any devel output
-  $GLOBALS['devel_shutdown'] = FALSE;
-  
-  // Output a random image
-  print(_emailkit_statistics_random_image(TRUE));
-  
-  // Return NULL, so that the page template will not kick in
-  return;
+  switch ($type) {
+    case 'click':
+      $url = isset($_GET['url']) ? $_GET['url'] : '';
+
+      if (empty($url)) {
+        drupal_goto();
+      }
+      else {
+        // TODO: Do something more useful
+        watchdog('emailkit_statistics', t('A link in a message has been clicked.'));
+        
+        // Redirect to the URL, prevent header injection attacks
+        $url = str_replace(array("\n", "\r"), '', $url);
+        header('Location: ' . $url, TRUE);
+        exit();
+      }
+      break;
+    
+    case 'view':
+      // TODO: Do something more useful
+      watchdog('emailkit_statistics', t('A message has been viewed.'));
+
+      // Output a random image, suppressing any devel output
+      $GLOBALS['devel_shutdown'] = FALSE;
+      print(_emailkit_statistics_random_image(TRUE));
+      exit();
+
+      break;
+  }
 }
 
 /**
@@ -37,8 +58,52 @@ function emailkit_statistics_page() {
 function _emailkit_statistics_message_build(&$message) {
   // Add an image that will be requested when the message is opened
   $message['emailkit_statistics_open'] = array(
-    '#value' => '<img src="' . check_plain(emailkit_statistics_url()) . '" alt="" />',
+    '#value' => '<img src="' . check_plain(emailkit_statistics_url(array('type' => 'view'))) . '" alt="" />',
   );
+}
+
+/**
+ * Private helper function for emailkit_statistics_emailkit_message_render() that prepares the message for statistics.
+ */
+function _emailkit_statistics_message_render(&$output, $format) {
+  global $emailkit_statistics_message_render_format;
+  
+  $emailkit_statistics_message_render_format = $format;
+  
+  $protocol = "https?://";
+  $authentication = "[a-zA-Z0-9:%_+*~#?&=.,/;-]+@";
+  $ip = "(?:[0-9]{1,3}\.){3}[0-9]{1,3}";
+  $domain = "(?:[A-Za-z0-9._+-]+\.)*[A-Za-z0-9._+-]+";
+  $port = ":\d{1,5}";
+  $path = "[a-zA-Z0-9:%_+*~#&\[\]=/;?\.,-]*[a-zA-Z0-9:%_+*~#&\[\]=/;-]";
+  $pattern = "^$protocol(?:$authentication)?(?:$ip|$domain)(?:$port)?/?$path^";
+
+  $output = preg_replace_callback($pattern, '_emailkit_statistics_url_rewrite', $output);
+}
+
+/**
+ * Callback for preg_replace_callback() used in _emailkit_statistics_message_render().
+ */
+function _emailkit_statistics_url_rewrite($match) {
+  global $emailkit_statistics_message_render_format;
+  
+  // Decode the URL
+  $url = $match[0];
+  if ($emailkit_statistics_message_render_format == EMAILKIT_MESSAGE_FORMAT_HTML) {
+    $url = htmlspecialchars_decode($url);
+  }
+  
+  // Rewrite the URL, but only if it is not an emailkit URL
+  if (strpos($url, url('emailkit', array('absolute' => TRUE))) === FALSE) {
+    $url = emailkit_statistics_url(array('type' => 'click', 'url' => $url));
+  }
+  
+  // Encode the URL
+  if ($emailkit_statistics_message_render_format == EMAILKIT_MESSAGE_FORMAT_HTML) {
+    $url = htmlspecialchars($url);
+  }
+  
+  return $url;
 }
 
 /**

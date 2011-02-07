@@ -213,3 +213,10 @@ function hook_emailkit_message_send(&$message, &$destination) {
     $message['#my_module_processed'] = TRUE;
   }
 }
+
+/**
+ * Invoked after a message has been rendered to allow other modules to apply last minute filters to the message.
+ */
+function hook_emailkit_message_render($message, $format, &$output) {
+  $output = str_replace($output, 'replace this', 'with this');
+}

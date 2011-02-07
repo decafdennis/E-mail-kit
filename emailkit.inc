@@ -279,16 +279,21 @@ function _emailkit_message_prepare(&$message_subtree) {
  * Private function used by emailkit_message_render().
  */
 function _emailkit_message_render($message, $format) {
-  $html = _emailkit_resolve_urls(drupal_render($message));
+  $output = _emailkit_resolve_urls(drupal_render($message));
 
   if ($format == EMAILKIT_MESSAGE_FORMAT_TEXT) {
     // Apply a very simply HTML to text conversion
     // TODO: Allow stuff to be rendered as plain text, or allow stuff to be specified in plain text and be converted to HTML?
-    return drupal_html_to_text($html);
+    $output = drupal_html_to_text($output);
   }
-  else {
-    return $html;
+  
+  // Allow modules to filter the rendered output
+  foreach (module_implements('emailkit_message_render') as $module) {
+    $function = $module . '_emailkit_message_render';
+    $function($message, $format, $output);
   }
+  
+  return $output;
 }
 
 /**

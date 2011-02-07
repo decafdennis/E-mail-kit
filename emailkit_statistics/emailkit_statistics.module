@@ -50,6 +50,20 @@ function emailkit_statistics_emailkit_message_build($message_id, &$message) {
 }
 
 /**
+ * Implementation of hook_emailkit_message_render().
+ */
+function emailkit_statistics_emailkit_message_render($message, $format, &$output) {
+  // Check whether statistics are enabled for this message type
+  $key = _emailkit_statistics_variable($message['#id']);
+  if (!variable_get($key, FALSE)) {
+    return;
+  }
+  
+  module_load_include('inc', 'emailkit_statistics');
+  _emailkit_statistics_message_render($output, $format);
+}
+
+/**
  * Private function that returns the name of the variable that stores whether a message type has statistics enabled.
  */
 function _emailkit_statistics_variable($message_id) {
