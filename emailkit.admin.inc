@@ -157,7 +157,12 @@ function emailkit_admin_message_type_form(&$form_state, $message_type) {
     );
   }
 
-  return system_settings_form($form);
+  $form = system_settings_form($form);
+  
+  // Since this form will be altered a lot, ensure the buttons stay at the bottom
+  $form['buttons']['#weight'] = 100;
+  
+  return $form;
 }
 
 /**

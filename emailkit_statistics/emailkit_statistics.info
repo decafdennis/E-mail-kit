@@ -1,0 +1,8 @@
+; Developed by Dennis Stevense for Digital Deployment
+name = Statistics
+description = Keeps statistics of things like how many times a message is opened or how often a link in a message is clicked.
+package = E-mail kit
+version = 6.x-1.x-dev
+core = 6.x
+
+dependencies[] = emailkit
