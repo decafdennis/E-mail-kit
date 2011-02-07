@@ -31,8 +31,9 @@ function emailkit_drupal_message($message_id, $drupal_message) {
     // Apply the line break filter
     $body = _filter_autop($body);
     
-    // Apply the URL filter
-    $body = _filter_url($body, '__emailkit_foo');
+    // Apply the URL filter, without trimming the URLs so they can still be copy/pasted if the text version asks to do this
+    variable_set('filter_url_length_emailkit_drupal', 9999);
+    $body = _filter_url($body, 'emailkit_drupal');
   }
   
   // TODO: Process custom headers in $drupal_message
