@@ -4,18 +4,115 @@
 /**
  * @file This include contains internal code that does not need to be in the main module file.
  */
+ 
+/**
+ * The regular expression used to find recipient replacement tokens in the body of a message.
+ */
+define('EMAILKIT_RECIPIENT_TOKEN_PATTERN', '/\[recipient:([^\s\]]+)\]/');
 
 /**
  * Implementation of hook_dispatcher_send() for the emailkit_default dispatcher.
  */
 function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
+  // Prepare the headers
+  $headers = array(
+    'Subject' => $message['#subject'],
+  );
+  
+  // Render the text and HTML versions of the body
+  $text = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT);
+  $html = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_HTML);
+  
+  // Process the destination
+  if ($destination['#type'] == 'emailkit_default') {
+    // If there are multiple recipients and either version of the body appears to contain recipient tokens, we need to multiplex to individual recipients
+    if (count($destination['#recipients']) > 1 && (preg_match(EMAILKIT_RECIPIENT_TOKEN_PATTERN, $text) || preg_match(EMAILKIT_RECIPIENT_TOKEN_PATTERN, $html))) {
+      $success = TRUE;
+
+      foreach ($destination['#recipients'] as $recipient) {
+        // Send the message seperately for each recipient
+        if (!_emailkit_default_dispatcher_send_recipient($headers, $recipient, $text, $html)) {
+          // Abort if sending failed for one of the recipients
+          // TODO: More graceful way to handle this?
+          $success = FALSE;
+          break;
+        }
+      }
+      
+      return $success;
+    }
+    // If there is just one recipient, we do the same as above but then just for this recipient
+    else if (count($destination['#recipients']) == 1) {
+      $recipient = array_shift($destination['#recipients']);
+      
+      return _emailkit_default_dispatcher_send_recipient($headers, $recipient, $text, $html);
+    }
+    // If there are multiple recipients and we don't have to do token replacement, we just send a single message with a Bcc header
+    else {
+      $bcc = array();
+      foreach ($destination['#recipients'] as $recipient) {
+        $bcc[] = $recipient['address'];
+      }
+      
+      $headers['Bcc'] = implode(', ', $bcc);
+      
+      return _emailkit_default_dispatcher_send_headers($headers, $text, $html);
+    }
+  }
+  // Token replacement is not supported in the emailkit_imf destination, so just send a single message using the To header we were given
+  else {
+    $headers['To'] = $destination['#to'];
+    
+    return _emailkit_default_dispatcher_send_headers($headers, $text, $html);
+  }
+}
+
+/**
+ * Private helper for emailkit_default_dispatcher_send().
+ */
+function _emailkit_default_dispatcher_send_recipient($headers = array(), $recipient, $text, $html) {
+  // Prepare the headers and body for this particular recipient
+  $headers['To'] = $recipient['address'];
+  $recipient_text = _emailkit_recipient_token_replace($recipient, $text, EMAILKIT_MESSAGE_FORMAT_TEXT);
+  $recipient_html = _emailkit_recipient_token_replace($recipient, $html, EMAILKIT_MESSAGE_FORMAT_HTML);
+  
+  return _emailkit_default_dispatcher_send_headers($headers, $text, $html);
+}
+
+/**
+ * Private helper for emailkit_default_dispatcher_send().
+ */
+function _emailkit_default_dispatcher_send_headers($headers = array(), $text, $html) {
+  // Set the From header if necessary
+  if (!isset($headers['From'])) {
+    $headers['From'] = variable_get('site_mail', ini_get('sendmail_from'));
+  }
+  
+  // Set the Sender, Return-Path and Errors-To headers for good measure
+  foreach (array('Sender', 'Return-Path', 'Errors-To') as $key) {
+    if (!isset($key)) {
+      $key = $headers['From'];
+    }
+  }
+  
+  // Set the To header if necessary
+  if (!isset($headers['To'])) {
+    if (isset($headers['Bcc'])) {
+      $headers['To'] = 'Undisclosed Recipients:;';
+    }
+    else {
+      trigger_error('Cannot send a message to nobody.', E_USER_WARNING);
+      return FALSE;
+    }
+  }
+
   // Create the text part
   $text_part = array(
     'headers' => array(
       'Content-Type' => 'text/plain; charset=utf-8; format=flowed; delsp=yes',
       'Content-Transfer-Encoding' => 'quoted-printable',
     ),
-    'body' => _emailkit_mime_quoted_printable(emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT)),
+    'body' => _emailkit_mime_quoted_printable($text),
   );
   
   // Create the HTML part
@@ -24,48 +121,41 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
       'Content-Type' => 'text/html; charset=utf-8',
       'Content-Transfer-Encoding' => 'quoted-printable',
     ),
-    'body' => _emailkit_mime_quoted_printable(emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_HTML)),
+    'body' => _emailkit_mime_quoted_printable($html),
   );
   
-  // Prepare the multipart/alternative body
+  // Create the multipart/alternative body
   $boundary = _emailkit_mime_content_boundary();
   $body = _emailkit_mime_multipart_alternative($boundary, array($text_part, $html_part));
   
   // Prepend a message for clients that don't support MIME
   $body = "This is a message in MIME format.  If you see this, your e-mail client does not support this format.\n\n$body";
   
-  // Prepare the origin
-  $from = variable_get('site_mail', ini_get('sendmail_from'));
+  // Update the headers for MIME
+  $headers['MIME-Version'] = '1.0';
+  $headers['Content-Type'] = 'multipart/alternative; boundary="' . $boundary . '"';
 
-  // Prepare the headers
-  $headers = array(
-    'From' => $from,
-    'Sender' => $from,
-    'Return-Path' => $from,
-    'Errors-To' => $from,
-    'MIME-Version' => '1.0',
-    'Content-Type' => 'multipart/alternative; boundary="' . $boundary . '"',
-  );
+  // Take the To and Subject headers to for passing into _emailkit_mail
+  $to = $headers['To'];
+  $subject = isset($headers['Subject']) ? $headers['Subject'] : NULL;
+  unset($headers['To']);
+  unset($headers['Subject']);
+  
+  return _emailkit_mail($to, $subject, $body, $headers);
+}
 
-  // Prepare the destination
-  if ($destination['#type'] == 'emailkit_imf') {
-    $to = $destination['#to'];
-  }
-  else if (count($destination['#recipients']) == 1) {
-    $recipient = array_shift($destination['#recipients']);
-    $to = $recipient['address'];
-  }
-  else {
-    $to = 'Undisclosed Recipients:;';
-    
-    $bcc = array();
-    foreach ($destination['#recipients'] as $recipient) {
-      $bcc[] = $recipient['address'];
-    }
-    $headers['Bcc'] = implode(", ", $bcc);
-  }
-
-  return _emailkit_mail($to, $message['#subject'], $body, $headers);
+/**
+ * Replaces the tokens found in the recipient in the input.
+ *
+ * @param $recipient A structured array representing a recipient in a emailkit_default destination.
+ * @param $input The input in which tokens should be replaced.
+ * @param $format The format of the input. Can be either EMAILKIT_MESSAGE_FORMAT_TEXT or EMAILKIT_MESSAGE_FORMAT_HTML
+ *
+ * @return The output resulting from the token replacement.
+ */
+function _emailkit_recipient_token_replace($recipient, $input, $format) {
+  // TODO
+  return $input;
 }
 
 /**
