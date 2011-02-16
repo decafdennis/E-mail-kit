@@ -76,7 +76,7 @@ function _emailkit_default_dispatcher_send_recipient($headers = array(), $recipi
   $recipient_text = _emailkit_recipient_token_replace($recipient, $text, EMAILKIT_MESSAGE_FORMAT_TEXT);
   $recipient_html = _emailkit_recipient_token_replace($recipient, $html, EMAILKIT_MESSAGE_FORMAT_HTML);
   
-  return _emailkit_default_dispatcher_send_headers($headers, $text, $html);
+  return _emailkit_default_dispatcher_send_headers($headers, $recipient_text, $recipient_html);
 }
 
 /**
@@ -154,8 +154,28 @@ function _emailkit_default_dispatcher_send_headers($headers = array(), $text, $h
  * @return The output resulting from the token replacement.
  */
 function _emailkit_recipient_token_replace($recipient, $input, $format) {
-  // TODO
-  return $input;
+  $replacements = _emailkit_recipients_token_replacements($recipient);
+  $tokens = array_keys($replacements);
+  $values = array_values($replacements);
+  
+  // Prepare the values for HTML output
+  if ($format == EMAILKIT_MESSAGE_FORMAT_HTML) {
+    $values = array_map('filter_xss', array_map('check_plain', $values));
+  }
+
+  return str_replace($tokens, $values, $input);
+}
+
+function _emailkit_recipients_token_replacements($recipient) {
+  $replacements = array();
+  
+  foreach ($recipient as $key => $value) {
+    $token = "[recipient:$key]";
+    
+    $replacements[$token] = $value;
+  }
+  
+  return $replacements;
 }
 
 /**
