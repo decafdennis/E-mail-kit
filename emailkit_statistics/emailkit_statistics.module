@@ -17,31 +17,11 @@ function emailkit_statistics_menu() {
 }
 
 /**
- * Implementation of hook_form_FORM_ID_alter().
- */
-function emailkit_statistics_form_emailkit_admin_message_type_form_alter(&$form, &$form_state) {
-  $key = _emailkit_statistics_variable($form['#message_type']['#id']);
-
-  $form['emailkit_statistics'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Statistics'),
-  );
-  
-  $form['emailkit_statistics'][$key] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Keep statistics'),
-    '#description' => t('If checked, statistics will be kept on messages of this message type. These statistics include how often a message is sent and opened and which links in a message are clicked.'),
-    '#default_value' => variable_get($key, FALSE),
-  );
-}
-
-/**
  * Implementation of hook_emailkit_message_build().
  */
 function emailkit_statistics_emailkit_message_build($message_id, &$message) {
-  // Check whether statistics are enabled for this message type
-  $key = _emailkit_statistics_variable($message_id);
-  if (variable_get($key, FALSE)) {
+  // Check whether statistics are enabled for this message
+  if (!empty($message['#emailkit_statistics'])) {
     module_load_include('inc', 'emailkit_statistics');
     _emailkit_statistics_message_build($message_id, $message);
   }
@@ -78,11 +58,4 @@ function emailkit_statistics_emailkit_message_after_send($message, $destination,
     module_load_include('inc', 'emailkit_statistics');
     _emailkit_statistics_message_after_send($message, $destination, $success);
   }
-}
-
-/**
- * Private function that returns the name of the variable that stores whether a message type has statistics enabled.
- */
-function _emailkit_statistics_variable($message_id) {
-  return 'emailkit_statistics__' . $message_id;
 }

@@ -10,7 +10,8 @@
  */
 function emailkit_node_message($message_id, $node) {
   return array(
-    '#node' => $node,
+    '#node' => $node, // For later reference
+    '#emailkit_statistics' => TRUE, // Enables statistics, if the emailkit_statistics module is enabled
     '#subject' => $node->title,
     'content' => array(
       'node' => array(

@@ -36,11 +36,6 @@ function emailkit_statistics_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'sent' => array(
-        'description' => 'The UNIX timestamp of the time at which the message was sent.',
-        'type' => 'int',
-        'not null' => TRUE,
-      ),
     ),
     'primary key' => array('tracking_id'),
   );
