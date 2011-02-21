@@ -11,7 +11,7 @@
  * @return An absolute URL.
  */
 function emailkit_statistics_url($query) {
-  // TODO: Include some kind of hash to prevent tampering with the URL?
+  // TODO: Include some kind of hash to prevent tampering with the URL
   return url('emailkit/statistics', array('query' => $query, 'absolute' => TRUE));
 }
 
@@ -19,57 +19,89 @@ function emailkit_statistics_url($query) {
  * Callback for the URL used for keeping statistics on a message.
  */
 function emailkit_statistics_page() {
+  // Get and validate the tracking id
+  $tracking_id = isset($_GET['tracking_id']) ? $_GET['tracking_id'] : '';
+  if (strlen($tracking_id) != 32) {
+    return drupal_not_found();
+  }
+
+  // Get and process the type
   $type = isset($_GET['type']) ? $_GET['type'] : NULL;
-  
   switch ($type) {
     case 'click':
+      // Get and validate the URL
       $url = isset($_GET['url']) ? $_GET['url'] : '';
-
       if (empty($url)) {
-        drupal_goto();
+        return drupal_not_found();
       }
-      else {
-        // TODO: Do something more useful
-        watchdog('emailkit_statistics', t('A link in a message has been clicked.'));
+
+      // Tally the click
+      $link_id = md5($url);
+      db_query("UPDATE {emailkit_statistics_message_link} SET hits = hits + 1 WHERE tracking_id = '%s' AND link_id = '%s'", $tracking_id, $link_id);
         
-        // Redirect to the URL, prevent header injection attacks
-        $url = str_replace(array("\n", "\r"), '', $url);
-        header('Location: ' . $url, TRUE);
-        exit();
-      }
-      break;
+      // Redirect to the URL, preventing header injection attacks
+      $url = str_replace(array("\n", "\r"), '', $url);
+      header('Location: ' . $url, TRUE);
+      exit();
+      return;
     
     case 'view':
-      // TODO: Do something more useful
-      watchdog('emailkit_statistics', t('A message has been viewed.'));
+      // Tally the view
+      db_query("UPDATE {emailkit_statistics_message} SET hits = hits + 1 WHERE tracking_id = '%s'", $tracking_id);
 
       // Output a random image, suppressing any devel output
       $GLOBALS['devel_shutdown'] = FALSE;
       print(_emailkit_statistics_random_image(TRUE));
       exit();
+      return;
 
-      break;
+    default:
+      return drupal_not_found();
   }
 }
 
 /**
  * Private helper function for emailkit_statistics_emailkit_message_build() that prepares the message for statistics.
  */
-function _emailkit_statistics_message_build(&$message) {
-  // Add an image that will be requested when the message is opened
-  $message['emailkit_statistics_open'] = array(
-    '#value' => '<img src="' . check_plain(emailkit_statistics_url(array('type' => 'view'))) . '" alt="" />',
+function _emailkit_statistics_message_build($message_id, &$message) {
+  // Enable statistics for this message
+  $message['#emailkit_statistics'] = TRUE;
+  
+  // Add an image that will be requested when the message is viewed
+  $message['emailkit_statistics_view'] = array(
+    '#value' => '<img src="' . check_plain(emailkit_statistics_url(array('type' => 'view', 'tracking_id' => $message['#tracking_id']))) . '" alt="" />',
   );
+}
+
+/**
+ * Private helper function for emailkit_statistics_emailkit_message_before_send() that prepares the message for statistics.
+ */
+function _emailkit_statistics_message_before_send(&$message, &$destination) {
+  // This global array keeps track of links replaced during message rendering
+  global $emailkit_statistics_message_link;
+  
+  // Initialize the global link array
+  if (!isset($emailkit_statistics_message_link)) {
+    $emailkit_statistics_message_link = array();
+  }
+  
+  // Initialize the global link array for this particular message
+  $tracking_id = $message['#tracking_id'];
+  $emailkit_statistics_message_link[$tracking_id] = array();
 }
 
 /**
  * Private helper function for emailkit_statistics_emailkit_message_render() that prepares the message for statistics.
  */
-function _emailkit_statistics_message_render(&$output, $format) {
-  global $emailkit_statistics_message_render_format;
+function _emailkit_statistics_message_render($message, $format, &$output) {
+  // These global variables are used for passing arguments to _emailkit_statistics_message_render_url_rewrite()
+  global $emailkit_statistics_message_render_message, $emailkit_statistics_message_render_format;
   
+  // Argument passing by global variables, bah!
+  $emailkit_statistics_message_render_message = $message;
   $emailkit_statistics_message_render_format = $format;
   
+  // Build the pattern for matching URLs
   $protocol = "https?://";
   $authentication = "[a-zA-Z0-9:%_+*~#?&=.,/;-]+@";
   $ip = "(?:[0-9]{1,3}\.){3}[0-9]{1,3}";
@@ -78,32 +110,72 @@ function _emailkit_statistics_message_render(&$output, $format) {
   $path = "[a-zA-Z0-9:%_+*~#&\[\]=/;?\.,-]*[a-zA-Z0-9:%_+*~#&\[\]=/;-]";
   $pattern = "^$protocol(?:$authentication)?(?:$ip|$domain)(?:$port)?/?$path^";
 
-  $output = preg_replace_callback($pattern, '_emailkit_statistics_url_rewrite', $output);
+  $output = preg_replace_callback($pattern, '_emailkit_statistics_message_render_url_rewrite', $output);
 }
 
 /**
  * Callback for preg_replace_callback() used in _emailkit_statistics_message_render().
  */
-function _emailkit_statistics_url_rewrite($match) {
-  global $emailkit_statistics_message_render_format;
+function _emailkit_statistics_message_render_url_rewrite($match) {
+  // This global array keeps track of links replaced during message rendering
+  global $emailkit_statistics_message_link;
+  
+  // These global variables are used for passing arguments from _emailkit_statistics_message_render()
+  global $emailkit_statistics_message_render_message, $emailkit_statistics_message_render_format;
+  
+  // Argument passing by global variables, bah!
+  $message = $emailkit_statistics_message_render_message;
+  $format = $emailkit_statistics_message_render_format;
   
   // Decode the URL
   $url = $match[0];
-  if ($emailkit_statistics_message_render_format == EMAILKIT_MESSAGE_FORMAT_HTML) {
+  if ($format == EMAILKIT_MESSAGE_FORMAT_HTML) {
     $url = htmlspecialchars_decode($url);
   }
   
   // Rewrite the URL, but only if it is not an emailkit URL
   if (strpos($url, url('emailkit', array('absolute' => TRUE))) === FALSE) {
-    $url = emailkit_statistics_url(array('type' => 'click', 'url' => $url));
+    // Add this URL to the global link array
+    $tracking_id = $message['#tracking_id'];
+    $link_id = md5($url);
+    $emailkit_statistics_message_link[$tracking_id][$link_id] = array(
+      'url' => $url,
+    );
+    
+    // Rewrite the URL
+    $url = emailkit_statistics_url(array('type' => 'click', 'url' => $url, 'tracking_id' => $tracking_id));
   }
   
   // Encode the URL
-  if ($emailkit_statistics_message_render_format == EMAILKIT_MESSAGE_FORMAT_HTML) {
+  if ($format == EMAILKIT_MESSAGE_FORMAT_HTML) {
     $url = htmlspecialchars($url);
   }
   
   return $url;
+}
+
+/**
+ * Private helper function for emailkit_statistics_emailkit_message_after_send() that prepares the message for statistics.
+ */
+function _emailkit_statistics_message_after_send($message, $destination, $success) {
+  // This global array keeps track of links replaced during message rendering
+  global $emailkit_statistics_message_link;
+  
+  $tracking_id = $message['#tracking_id'];
+  
+  // Was the message sent successfully?
+  if ($success) {
+    // Add the message to the database
+    db_query("INSERT INTO {emailkit_statistics_message} (tracking_id, sent) VALUES ('%s', %d)", $tracking_id, time());
+  
+    // Add all links in the message to the database
+    foreach ($emailkit_statistics_message_link[$tracking_id] as $link_id => $link) {
+      db_query("INSERT INTO {emailkit_statistics_message_link} (tracking_id, link_id, url) VALUES ('%s', '%s', '%s')", $tracking_id, $link_id, $link['url']);
+    }
+  }
+  
+  // Clear out the global link array for this particular message
+  unset($emailkit_statistics_message_link[$tracking_id]);
 }
 
 /**

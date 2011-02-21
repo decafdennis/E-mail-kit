@@ -434,13 +434,24 @@ function emailkit_send($message, $destination) {
     return FALSE;
   }
 
+  // Set the message sending recursion depth
+  $message['#sending_depth'] = isset($message['#sending_depth']) ? $message['#sending_depth'] + 1 : 0;
+
   // Give all modules a last chance to alter the message now that we know the destination
-  foreach (module_implements('emailkit_message_send') as $module) {
-    $function = $module . '_emailkit_message_send';
+  foreach (module_implements('emailkit_message_before_send') as $module) {
+    $function = $module . '_emailkit_message_before_send';
     $function($message, $destination);
   }
 
-  return $dispatcher_send($dispatcher_name, $message, $destination);
+  $success = $dispatcher_send($dispatcher_name, $message, $destination);
+  
+  // Give all modules a last chance to alter the message now that we know the destination
+  foreach (module_implements('emailkit_message_after_send') as $module) {
+    $function = $module . '_emailkit_message_after_send';
+    $function($message, $destination, $success);
+  }
+  
+  return $success;
 }
 
 /**

@@ -334,6 +334,10 @@ function _emailkit_message($message_id) {
     return NULL;
   }
   
+  // Set the message id and unique tracking id
+  $message['#id'] = $message_id;
+  $message['#tracking_id'] = md5(uniqid(mt_rand(), TRUE));
+
   // Set default message regions
   $message['header']['#weight'] = -0.1;
   $message['content']['#weight'] = 0;
@@ -351,9 +355,8 @@ function _emailkit_message($message_id) {
     $function($message_id, $message);
   }
   
-  // Finish the message and prepare it so that it is ready for rendering
+  // Prepare the message for rendering
   $message['#type'] = 'emailkit_message';
-  $message['#id'] = $message_id;
   _emailkit_message_prepare($message);
   
   return $message;

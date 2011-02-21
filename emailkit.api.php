@@ -205,12 +205,10 @@ function hook_emailkit_message_alter($message_id, &$message) {
  *
  * Note that this hook may be invoked more than once with different destinations, since a dispatcher can choose to forward it to another destination.
  */
-function hook_emailkit_message_send(&$message, &$destination) {
-  if (empty($message['#my_module_processed'])) {
+function hook_emailkit_message_before_send(&$message, &$destination) {
+  // Only act if this is not a recursive invocation of emailkit_send()
+  if ($message['#sending_depth'] == 0) {
     // TODO: Do something to the message independent of the destination
-    
-    // Mark the message as having been processed, because we don't need to do it again if it is forwarded to another destination
-    $message['#my_module_processed'] = TRUE;
   }
 }
 
@@ -219,4 +217,16 @@ function hook_emailkit_message_send(&$message, &$destination) {
  */
 function hook_emailkit_message_render($message, $format, &$output) {
   $output = str_replace($output, 'replace this', 'with this');
+}
+
+/**
+ * Invoked right after a message is sent to allow other modules to save information about the message.
+ *
+ * Note that this hook may be invoked more than once with different destinations, since a dispatcher can choose to forward it to another destination.
+ */
+function hook_emailkit_message_after_send($message, $destination, $success) {
+  // Only act if this is not a recursive invocation of emailkit_send()
+  if ($success && $message['#sending_depth'] == 0) {
+    // TODO: Save information about the message using it's #tracking_id
+  }
 }

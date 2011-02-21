@@ -41,26 +41,43 @@ function emailkit_statistics_form_emailkit_admin_message_type_form_alter(&$form,
 function emailkit_statistics_emailkit_message_build($message_id, &$message) {
   // Check whether statistics are enabled for this message type
   $key = _emailkit_statistics_variable($message_id);
-  if (!variable_get($key, FALSE)) {
-    return;
+  if (variable_get($key, FALSE)) {
+    module_load_include('inc', 'emailkit_statistics');
+    _emailkit_statistics_message_build($message_id, $message);
   }
-  
-  module_load_include('inc', 'emailkit_statistics');
-  _emailkit_statistics_message_build($message);
+}
+
+/**
+ * Implementation of hook_emailkit_message_before_send().
+ */
+function emailkit_statistics_emailkit_message_before_send(&$message, &$destination) {
+  // Check whether statistics are enabled for this message
+  if (!empty($message['#emailkit_statistics']) && $message['#sending_depth'] == 0) {
+    module_load_include('inc', 'emailkit_statistics');
+    _emailkit_statistics_message_before_send($message, $destination);
+  }
 }
 
 /**
  * Implementation of hook_emailkit_message_render().
  */
 function emailkit_statistics_emailkit_message_render($message, $format, &$output) {
-  // Check whether statistics are enabled for this message type
-  $key = _emailkit_statistics_variable($message['#id']);
-  if (!variable_get($key, FALSE)) {
-    return;
+  // Check whether statistics are enabled for this message
+  if (!empty($message['#emailkit_statistics'])) {
+    module_load_include('inc', 'emailkit_statistics');
+    _emailkit_statistics_message_render($message, $format, $output);
   }
-  
-  module_load_include('inc', 'emailkit_statistics');
-  _emailkit_statistics_message_render($output, $format);
+}
+
+/**
+ * Implementation of hook_emailkit_message_after_send().
+ */
+function emailkit_statistics_emailkit_message_after_send($message, $destination, $success) {
+  // Check whether statistics are enabled for this message
+  if (!empty($message['#emailkit_statistics']) && $message['#sending_depth'] == 0) {
+    module_load_include('inc', 'emailkit_statistics');
+    _emailkit_statistics_message_after_send($message, $destination, $success);
+  }
 }
 
 /**

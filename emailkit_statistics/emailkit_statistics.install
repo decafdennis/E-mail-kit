@@ -1,2 +1,79 @@
 <?php
 // Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_install().
+ */
+function emailkit_statistics_install() {
+  drupal_install_schema('emailkit_statistics');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function emailkit_statistics_uninstall() {
+  drupal_uninstall_schema('emailkit_statistics');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function emailkit_statistics_schema() {
+  $schema = array();
+
+  $schema['emailkit_statistics_message'] = array(
+    'description' => 'Contains information about messages for which statistics were enabled.',
+    'fields' => array(
+      'tracking_id' => array(
+        'description' => 'The tracking identifier of the message.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'hits' => array(
+        'description' => 'The number of times the message has been viewed.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sent' => array(
+        'description' => 'The UNIX timestamp of the time at which the message was sent.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('tracking_id'),
+  );
+
+  $schema['emailkit_statistics_message_link'] = array(
+    'description' => 'Contains information about links in messages for which statistics were enabled.',
+    'fields' => array(
+      'tracking_id' => array(
+        'description' => 'The tracking identifier of the message.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'link_id' => array(
+        'description' => 'The identifier of the link, which is the MD5 hash of the URL of the link.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'url' => array(
+        'description' => 'The URL of the link.',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'hits' => array(
+        'description' => 'The number of times the link has been clicked.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('tracking_id', 'link_id'),
+  );
+
+  return $schema;
+}
