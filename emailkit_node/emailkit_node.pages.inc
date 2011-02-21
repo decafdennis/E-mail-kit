@@ -58,10 +58,19 @@ function emailkit_node_send_form_submit($form, &$form_state) {
 function emailkit_node_sent($node) {
   // Get all messages sent for this node
   $messages = array();
-  $result = db_query("SELECT tracking_id, uid, sent FROM {emailkit_node_message} WHERE nid = %d ORDER BY sent DESC", $node->nid);
+  
+  // If the statistics module is enabled, also fetch a flag indicating whether statistics are available for a message
+  if (module_exists('emailkit_statistics')) {
+    $result = db_query("SELECT n.tracking_id, n.uid, n.sent, s.tracking_id IS NOT NULL AS statistics FROM {emailkit_node_message} n LEFT JOIN {emailkit_statistics_message} s ON n.tracking_id = s.tracking_id WHERE n.nid = %d ORDER BY n.sent DESC", $node->nid);
+  }
+  else {
+    $result = db_query("SELECT tracking_id, uid, sent, 0 AS statistics FROM {emailkit_node_message} WHERE nid = %d ORDER BY sent DESC", $node->nid);
+  }
+
   while ($record = db_fetch_object($result)) {
     $message = $record;
     $message->user = user_load($message->uid);
+    $message->statistics_path = 'node/' . $node->nid . '/message/sent/' . $message->tracking_id . '/statistics';
     
     $messages[] = $record;
   }
@@ -70,18 +79,43 @@ function emailkit_node_sent($node) {
 }
 
 /**
+ * Returns the statistics page for a particular message.
+ */
+function emailkit_node_sent_message_statistics($node, $tracking_id) {
+  // Set the breadcrumb
+  $breadcrumb = array();
+  $breadcrumb[] = l(t('Home'), '<front>');
+  $breadcrumb[] = l($node->title, 'node/' . $node->nid);
+  $breadcrumb[] = l(t('E-mail'), 'node/' . $node->nid . '/message');
+  $breadcrumb[] = l(t('Sent messages'), 'node/' . $node->nid . '/message/sent');
+  $breadcrumb[] = l(drupal_get_title(), 'node/' . $node->nid . '/message/sent/' . $tracking_id . '/statistics');
+  drupal_set_breadcrumb($breadcrumb);
+  
+  // Ask the statistics module to render the page
+  $output = emailkit_statistics_message_page($tracking_id);
+  
+  if (isset($output)) {
+    return $output;
+  }
+  else {
+    return drupal_not_found();
+  }
+}
+
+/**
  * Renders the page for the sent messages tab on a node.
  */
 function theme_emailkit_node_sent($messages) {
   $output = "";
 
-  $header = array(t('Date sent'), t('Sender'));
+  $header = array(t('Date sent'), t('Sender'), t('Statistics'));
   $rows = array();
   foreach ($messages as $message) {
     // Add a row for the message
     $rows[] = array(
       format_date($message->sent),
       theme('username', $message->user),
+      $message->statistics ? l(t('statistics'), $message->statistics_path) : t('no statistics available'),
     );
   }
 

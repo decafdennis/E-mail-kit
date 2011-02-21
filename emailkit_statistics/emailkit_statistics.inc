@@ -179,6 +179,31 @@ function _emailkit_statistics_message_after_send($message, $destination, $succes
 }
 
 /**
+ * Private helper function for emailkit_statistics_message_page() that returns a page that displays statistics for a message.
+ */
+function _emailkit_statistics_message_page($tracking_id) {
+  $message_stats = db_fetch_object(db_query("SELECT * FROM {emailkit_statistics_message} WHERE tracking_id = '%s'", $tracking_id));
+  if (!isset($message_stats)) {
+    return;
+  }
+  
+  // TODO: Make the output prettier
+  $output = '<pre>';
+  
+  $output .= "Number of hits: $message_stats->hits\n";
+
+  $result = db_query("SELECT * FROM {emailkit_statistics_message_link} WHERE tracking_id = '%s'", $tracking_id);
+  while ($link_stats = db_fetch_object($result)) {
+    $output .= "\n";
+    $output .= check_plain($link_stats->url) . "\n";
+    $output .= "\tNumber of clicks: $link_stats->hits\n";
+  }
+  
+  $output .= '</pre>';
+  return $output;
+}
+
+/**
  * Generates a small random image and returns the data. Currently, this function generates a transparent GIF file of random size.
  *
  * @see http://www.w3.org/Graphics/GIF/spec-gif89a.txt

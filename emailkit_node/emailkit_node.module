@@ -43,6 +43,15 @@ function emailkit_node_menu() {
     'file' => 'emailkit_node.pages.inc',
     'type' => MENU_LOCAL_TASK,
   );
+  $items['node/%node/message/sent/%/statistics'] = array(
+    'title' => 'Statistics',
+    'page callback' => 'emailkit_node_sent_message_statistics',
+    'page arguments' => array(1, 4),
+    'access callback' => 'emailkit_node_access',
+    'access arguments' => array(1),
+    'file' => 'emailkit_node.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
   
   return $items;
 }

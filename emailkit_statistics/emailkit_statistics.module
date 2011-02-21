@@ -59,3 +59,15 @@ function emailkit_statistics_emailkit_message_after_send($message, $destination,
     _emailkit_statistics_message_after_send($message, $destination, $success);
   }
 }
+
+/**
+ * Returns a page that displays statistics for the message with the given tracking identifier.
+ *
+ * @param $tracking_id The tracking identifier of the message.
+ *
+ * @return The page content or NULL if no information for the given tracking identifier can be found.
+ */
+function emailkit_statistics_message_page($tracking_id) {
+  module_load_include('inc', 'emailkit_statistics');
+  return _emailkit_statistics_message_page($tracking_id);
+}
