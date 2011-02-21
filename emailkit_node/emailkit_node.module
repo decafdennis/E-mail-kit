@@ -21,11 +21,25 @@ function emailkit_node_menu() {
 
   $items['node/%node/message'] = array(
     'title' => 'E-mail',
-    'page callback' => 'emailkit_node_email',
+    'page callback' => 'emailkit_node_send',
     'page arguments' => array(1),
     'access callback' => 'emailkit_node_access',
     'access arguments' => array(1),
     'weight' => 10,
+    'file' => 'emailkit_node.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['node/%node/message/send'] = array(
+    'title' => 'Send message',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['node/%node/message/sent'] = array(
+    'title' => 'Sent messages',
+    'page callback' => 'emailkit_node_sent',
+    'page arguments' => array(1),
+    'access callback' => 'emailkit_node_access',
+    'access arguments' => array(1),
     'file' => 'emailkit_node.pages.inc',
     'type' => MENU_LOCAL_TASK,
   );
@@ -64,12 +78,17 @@ function emailkit_node_theme() {
     'arguments' => array('element' => array()),
     'file' => 'emailkit_node.inc',
   );
+  
+  $theme['emailkit_node_sent'] = array(
+    'arguments' => array('messages' => array()),
+    'file' => 'emailkit_node.pages.inc',
+  );
 
   return $theme;
 }
 
 /**
- * Implementation of emailkit_emailkit_message_info().
+ * Implementation of hook_emailkit_message_info().
  */
 function emailkit_node_emailkit_message_info() {
   $info = array();
@@ -80,4 +99,17 @@ function emailkit_node_emailkit_message_info() {
   );
   
   return $info;
+}
+
+/**
+ * Implementation of hook_emailkit_message_after_send().
+ */
+function emailkit_node_emailkit_message_after_send($message, $destination, $success) {
+  // Only act if sending was successful and if this is not a recursive call of emailkit_send()
+  if ($success && $message['#id'] == 'emailkit_node' && $message['#sending_depth'] == 0) {
+    global $user;
+
+    // Keep a record of this message
+    db_query("INSERT INTO {emailkit_node_message} (tracking_id, nid, uid, sent) VALUES ('%s', %d, %d, %d)", $message['#tracking_id'], $message['#node']->nid, $user->uid, time());
+  }
 }

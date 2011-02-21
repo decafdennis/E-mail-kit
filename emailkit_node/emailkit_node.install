@@ -1,0 +1,55 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_install().
+ */
+function emailkit_node_install() {
+  drupal_install_schema('emailkit_node');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function emailkit_node_uninstall() {
+  drupal_uninstall_schema('emailkit_node');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function emailkit_node_schema() {
+  $schema = array();
+
+  $schema['emailkit_node_message'] = array(
+    'description' => 'Contains information about the messages sent from this module.',
+    'fields' => array(
+      'tracking_id' => array(
+        'description' => 'The tracking identifier of the message.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => 'The identifier of the node the message is about.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'The identifier of the user that sent the message.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'sent' => array(
+        'description' => 'The UNIX timestamp of the time at which the message was sent.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('tracking_id'),
+  );
+
+  return $schema;
+}

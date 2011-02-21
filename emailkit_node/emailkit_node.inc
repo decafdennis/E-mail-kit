@@ -10,6 +10,7 @@
  */
 function emailkit_node_message($message_id, $node) {
   return array(
+    '#node' => $node,
     '#subject' => $node->title,
     'content' => array(
       'node' => array(
