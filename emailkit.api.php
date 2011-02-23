@@ -201,31 +201,47 @@ function hook_emailkit_message_alter($message_id, &$message) {
 }
 
 /**
- * Invoked right before a message is sent to allow other modules to alter the message, possibly based on the destination.
+ * Invoked right before a message is sent to allow other modules to alter the message and destination.
  *
- * Note that this hook may be invoked more than once with different destinations, since a dispatcher can choose to forward it to another destination.
+ * This hook may be invoked more than once with different destinations, since a dispatcher can choose to forward it to another destination. You can inspect $message['#sending_depth'] to determine the number of times the message has been forwarded.
+ *
+ * At this point you should refrain from adding elements to the message that have no absolute #weight, since their rendering order will be undefined if you do.
+ *
+ * @param $message The message that is being sent.
+ * @param $destination The destination the message is being sent to.
  */
 function hook_emailkit_message_before_send(&$message, &$destination) {
-  // Only act if this is not a recursive invocation of emailkit_send()
+  // Only do this once, so only do this when the message has not been forwarded yet
   if ($message['#sending_depth'] == 0) {
-    // TODO: Do something to the message independent of the destination
+    // TODO: Do something to the message or destination
   }
 }
 
 /**
- * Invoked after a message has been rendered to allow other modules to apply last minute filters to the message.
+ * Invoked right after the message has been rendered to allow allow other modules to alter the result.
+ *
+ * If the message is being rendered during message sending, the destination is given as well. Unlike hook_emailkit_message_before_send() and hook_emailkit_message_after_send(), this hook is usually invoked only once for each format.
+ *
+ * @param $message The message that is being rendered.
+ * @param $format The format that the message is being rendered in.
+ * @param $body The rendered message.
+ * @param $destination The destination the message is about to be sent to, if applicable.
  */
-function hook_emailkit_message_render($message, $format, &$output) {
-  $output = str_replace($output, 'replace this', 'with this');
+function hook_emailkit_message_render($message, $format, &$body, &$destination = NULL) {
+  $body = str_replace($body, 'replace this', 'with this');
 }
 
 /**
  * Invoked right after a message is sent to allow other modules to save information about the message.
  *
- * Note that this hook may be invoked more than once with different destinations, since a dispatcher can choose to forward it to another destination.
+ * Like hook_emailkit_message_before_send(), this hook may be invoked more than once with different destinations. This works like a stack, so this hook is invoked in reserve of the order hook_emailkit_message_before_send() was invoked. You can inspect $message['#sending_depth'] to determine the number of destinations on the stack.
+ *
+ * @param $message The message that is being sent.
+ * @param $destination The destination the message is being sent to.
+ * @param $success A flag indicating whether sending was successful.
  */
 function hook_emailkit_message_after_send($message, $destination, $success) {
-  // Only act if this is not a recursive invocation of emailkit_send()
+  // Only do this once, so only do this when the message has not been forwarded yet
   if ($success && $message['#sending_depth'] == 0) {
     // TODO: Save information about the message using it's #token
   }

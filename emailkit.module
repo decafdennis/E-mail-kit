@@ -363,10 +363,11 @@ function emailkit_message($message_id) {
  *
  * @param $message A structured message as returned by emailkit_message().
  * @param $format The format to render the message in. Can be EMAILKIT_MESSAGE_FORMAT_HTML or EMAILKIT_MESSAGE_FORMAT_TEXT.
+ * @param $destination The destination the message is about to be sent to, if applicable. This will be passed along to hook_emailkit_message_render().
  *
  * @return A string containing the message rendered in the given format with LF line endings.
  */
-function emailkit_message_render($message, $format) {
+function emailkit_message_render($message, $format, &$destination = NULL) {
   if (!isset($message)) {
     return NULL;
   }
@@ -374,7 +375,7 @@ function emailkit_message_render($message, $format) {
   module_load_include('inc', 'emailkit', 'emailkit');
   
   // Pass on the message
-  return _emailkit_message_render($message, $format);
+  return _emailkit_message_render($message, $format, $destination);
 }
 
 /**

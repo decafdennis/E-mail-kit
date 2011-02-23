@@ -20,8 +20,8 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
   );
   
   // Render the text and HTML versions of the body
-  $text = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT);
-  $html = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_HTML);
+  $text = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT, $destination);
+  $html = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_HTML, $destination);
   
   // Process the destination
   if ($destination['#type'] == 'emailkit_default') {
@@ -394,7 +394,7 @@ function _emailkit_message_prepare(&$message_subtree) {
 /**
  * Private function used by emailkit_message_render().
  */
-function _emailkit_message_render($message, $format) {
+function _emailkit_message_render($message, $format, &$destination = NULL) {
   $output = _emailkit_resolve_urls(drupal_render($message));
 
   if ($format == EMAILKIT_MESSAGE_FORMAT_TEXT) {
@@ -406,7 +406,7 @@ function _emailkit_message_render($message, $format) {
   // Allow modules to filter the rendered output
   foreach (module_implements('emailkit_message_render') as $module) {
     $function = $module . '_emailkit_message_render';
-    $function($message, $format, $output);
+    $function($message, $format, $output, $destination);
   }
   
   return $output;
