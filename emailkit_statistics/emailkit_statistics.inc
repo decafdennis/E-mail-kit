@@ -344,26 +344,70 @@ function _emailkit_statistics_message_after_send($message, $destination, $succes
  * Private helper function for emailkit_statistics_message_page() that returns a page that displays statistics for a message.
  */
 function _emailkit_statistics_message_page($token) {
-  // TODO: Make this work again
-  // $message_stats = db_fetch_object(db_query("SELECT * FROM {emailkit_statistics_message} WHERE token = '%s'", $token));
-  // if (!isset($message_stats)) {
-  //   return;
-  // }
-  // 
-  // // TODO: Make the output prettier
-  // $output = '<pre>';
-  // 
-  // $output .= "Number of hits: $message_stats->hits\n";
-  // 
-  // $result = db_query("SELECT * FROM {emailkit_statistics_message_link} WHERE token = '%s'", $token);
-  // while ($link_stats = db_fetch_object($result)) {
-  //   $output .= "\n";
-  //   $output .= check_plain($link_stats->url) . "\n";
-  //   $output .= "\tNumber of clicks: $link_stats->hits\n";
-  // }
-  // 
-  // $output .= '</pre>';
-  // return $output;
+  // Fetch all events for the message, counting the number times an event has been triggerd and the number of unique recipients that have triggered each event
+  $events = array();
+  $result = db_query("SELECT e.eid, e.type, e.url, COUNT(l.rid) AS hits, COUNT(DISTINCT l.rid) AS recipients FROM {emailkit_statistics_event} e LEFT JOIN {emailkit_statistics_log} l ON e.eid = l.eid WHERE e.token = '%s' GROUP BY e.eid", $token);
+  while ($event = db_fetch_object($result)) {
+    if (!isset($events[$event->type])) {
+      $events[$event->type] = array();
+    }
+    
+    $events[$event->type][$event->eid] = $event;
+  }
+
+  $header = array(t('Description'), t('Value'));
+  $rows = array();
+
+  // Add a row that indicates the total number of recipients
+  $sent = 1;
+  foreach ($events['send'] as $event) {
+    $sent = $event->hits;
+  }
+  $rows[] = array(
+    t('Number of recipients'),
+    sprintf("%d", $sent),
+  );
+
+  // Add rows indicating how many times the message has been viewed
+  $total_views = 0;
+  $unique_views = 0;
+  foreach ($events['view'] as $event) {
+    $total_views = (int)$event->hits;
+    $unique_views = (int)$event->recipients;
+  }
+  $rows[] = array(
+    t('Recipients that have viewed the message'),
+    sprintf("%d (%.1f%%)", $unique_views, $unique_views / $sent * 100.0),
+  );
+  $rows[] = array(
+    t('Total number of times viewed'),
+    sprintf("%d", $total_views),
+  );
+
+  // Add rows indicating how many times links have been clicked
+  foreach ($events['click'] as $event) {
+    $total_clicks = (int)$event->hits;
+    $unique_clicks = (int)$event->recipients;
+    
+    $rows[] = array(
+      array(
+        'data' => l($event->url, $event->url),
+        'colspan' => _emailkit_table_colspan($header),
+      ),
+    );
+    
+    $rows[] = array(
+      t('Recipients that have clicked on the link'),
+      sprintf("%d (%.1f%%)", $unique_clicks, $unique_clicks / $sent * 100.0),
+    );
+    $rows[] = array(
+      t('Total number of clicks on the link'),
+      sprintf("%d", $total_clicks),
+    );
+  }
+
+  // TODO: Use a theme function?
+  return theme('table', $header, $rows);
 }
 
 /**
