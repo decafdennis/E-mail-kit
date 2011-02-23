@@ -70,5 +70,66 @@ function emailkit_statistics_schema() {
     'primary key' => array('tracking_id', 'link_id'),
   );
 
+  $schema['emailkit_statistics_message_recipient'] = array(
+    'description' => 'Contains information about recipients of messages for which statistics were enabled.',
+    'fields' => array(
+      'tracking_id' => array(
+        'description' => 'The tracking identifier of the message.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'recipient_id' => array(
+        'description' => 'The identifier of the recipient, which is the MD5 hash of the e-mail address of the recipient.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'address' => array(
+        'description' => 'The e-mail address of the recipient.',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'hits' => array(
+        'description' => 'The number of times the message has been viewed by the recipient.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('tracking_id', 'recipient_id'),
+  );
+
+  $schema['emailkit_statistics_message_recipient_link'] = array(
+    'description' => 'Contains information about links clicked by recipients of messages for which statistics were enabled.',
+    'fields' => array(
+      'tracking_id' => array(
+        'description' => 'The tracking identifier of the message.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'recipient_id' => array(
+        'description' => 'The identifier of the recipient, which is the MD5 hash of the e-mail address of the recipient.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'link_id' => array(
+        'description' => 'The identifier of the link, which is the MD5 hash of the URL of the link.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'hits' => array(
+        'description' => 'The number of times the link has been clicked by the recipient.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('tracking_id', 'recipient_id', 'link_id'),
+  );
+
   return $schema;
 }

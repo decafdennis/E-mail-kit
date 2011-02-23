@@ -20,8 +20,14 @@ function emailkit_statistics_url($query) {
  */
 function emailkit_statistics_page() {
   // Get and validate the tracking id
-  $tracking_id = isset($_GET['tracking_id']) ? $_GET['tracking_id'] : '';
-  if (strlen($tracking_id) != 32) {
+  $tracking_id = isset($_GET['tracking_id']) ? $_GET['tracking_id'] : NULL;
+  if (!isset($tracking_id) || strlen($tracking_id) != 32) {
+    return drupal_not_found();
+  }
+
+  // Get and validate the recipient id
+  $recipient_id = isset($_GET['recipient_id']) ? $_GET['recipient_id'] : NULL;
+  if (isset($recipient_id) && strlen($recipient_id) != 32) {
     return drupal_not_found();
   }
 
@@ -37,8 +43,14 @@ function emailkit_statistics_page() {
 
       // Tally the click
       $link_id = md5($url);
-      db_query("UPDATE {emailkit_statistics_message_link} SET hits = hits + 1 WHERE tracking_id = '%s' AND link_id = '%s'", $tracking_id, $link_id);
-        
+      if (isset($recipient_id)) {
+        db_query("INSERT IGNORE INTO {emailkit_statistics_message_recipient_link} (tracking_id, recipient_id, link_id) VALUES ('%s', '%s', '%s')", $tracking_id, $recipient_id, $link_id);
+        db_query("UPDATE {emailkit_statistics_message_recipient_link} SET hits = hits + 1 WHERE tracking_id = '%s' AND recipient_id = '%s' AND link_id = '%s'", $tracking_id, $recipient_id, $link_id);
+      }
+      else {
+        db_query("UPDATE {emailkit_statistics_message_link} SET hits = hits + 1 WHERE tracking_id = '%s' AND link_id = '%s'", $tracking_id, $link_id);
+      }
+
       // Redirect to the URL, preventing header injection attacks
       $url = str_replace(array("\n", "\r"), '', $url);
       header('Location: ' . $url, TRUE);
@@ -47,7 +59,12 @@ function emailkit_statistics_page() {
     
     case 'view':
       // Tally the view
-      db_query("UPDATE {emailkit_statistics_message} SET hits = hits + 1 WHERE tracking_id = '%s'", $tracking_id);
+      if (isset($recipient_id)) {
+        db_query("UPDATE {emailkit_statistics_message_recipient} SET hits = hits + 1 WHERE tracking_id = '%s' AND recipient_id = '%s'", $tracking_id, $recipient_id);
+      }
+      else {
+        db_query("UPDATE {emailkit_statistics_message} SET hits = hits + 1 WHERE tracking_id = '%s'", $tracking_id);
+      }
 
       // Output a random image, suppressing any devel output
       $GLOBALS['devel_shutdown'] = FALSE;
@@ -61,33 +78,63 @@ function emailkit_statistics_page() {
 }
 
 /**
- * Private helper function for emailkit_statistics_emailkit_message_build() that prepares the message for statistics.
- */
-function _emailkit_statistics_message_build($message_id, &$message) {
-  // Enable statistics for this message
-  $message['#emailkit_statistics'] = TRUE;
-  
-  // Add an image that will be requested when the message is viewed
-  $message['emailkit_statistics_view'] = array(
-    '#value' => '<img src="' . check_plain(emailkit_statistics_url(array('type' => 'view', 'tracking_id' => $message['#tracking_id']))) . '" alt="" />',
-  );
-}
-
-/**
  * Private helper function for emailkit_statistics_emailkit_message_before_send() that prepares the message for statistics.
  */
 function _emailkit_statistics_message_before_send(&$message, &$destination) {
+  // This global array keeps track of whether recipient tracking is enabled for a message
+  global $emailkit_statistics_message_recipient;
+
   // This global array keeps track of links replaced during message rendering
   global $emailkit_statistics_message_link;
   
-  // Initialize the global link array
-  if (!isset($emailkit_statistics_message_link)) {
-    $emailkit_statistics_message_link = array();
+  // Get the unique identifier of the message
+  $tracking_id = $message['#tracking_id'];
+
+  // Do this only once, i.e. in the first invocation of emailkit_send()
+  if ($message['#sending_depth'] == 0) {
+    // Initialize the global arrays
+    if (!isset($emailkit_statistics_message_recipient)) {
+      $emailkit_statistics_message_recipient = array();
+    }
+    if (!isset($emailkit_statistics_message_link)) {
+      $emailkit_statistics_message_link = array();
+    }
+
+    // Initialize the global arrays for this particular message
+    $emailkit_statistics_message_recipient[$tracking_id] = FALSE;
+    $emailkit_statistics_message_link[$tracking_id] = array();
   }
   
-  // Initialize the global link array for this particular message
-  $tracking_id = $message['#tracking_id'];
-  $emailkit_statistics_message_link[$tracking_id] = array();
+  // Is this a known destination, i.e. is this a destination we can work with?
+  if ($destination['#type'] == 'emailkit_default') {
+    // Enable recipient tracking
+    $emailkit_statistics_message_recipient[$tracking_id] = TRUE;
+
+    // Add tokens to the recipients
+    foreach ($destination['#recipients'] as $key => $recipient) {
+      $destination['#recipients'][$key]['emailkit_statistics_id'] = md5($recipient['address']);
+    }
+  }
+  else {
+    // Disable recipient tracking
+    // Note: this implies that recipient tracking is only enabled if the final destination is a known destination
+    $emailkit_statistics_message_recipient[$tracking_id] = FALSE;
+  }
+
+  // Add an image that will be requested when the message is viewed
+  $view_query = array(
+    'type' => 'view',
+    'tracking_id' => $tracking_id,
+  );
+
+  // Add information about the recipient if recipient tracking is enabled
+  if ($emailkit_statistics_message_recipient[$tracking_id]) {
+    $view_query['recipient_id'] = '[recipient:emailkit_statistics_id]';
+  }
+
+  $message['emailkit_statistics_view'] = array(
+    '#value' => '<img src="' . check_plain(emailkit_statistics_url($view_query)) . '" alt="" />',
+  );
 }
 
 /**
@@ -117,6 +164,9 @@ function _emailkit_statistics_message_render($message, $format, &$output) {
  * Callback for preg_replace_callback() used in _emailkit_statistics_message_render().
  */
 function _emailkit_statistics_message_render_url_rewrite($match) {
+  // This global array keeps track of whether recipient tracking is enabled for a message
+  global $emailkit_statistics_message_recipient;
+
   // This global array keeps track of links replaced during message rendering
   global $emailkit_statistics_message_link;
   
@@ -143,7 +193,18 @@ function _emailkit_statistics_message_render_url_rewrite($match) {
     );
     
     // Rewrite the URL
-    $url = emailkit_statistics_url(array('type' => 'click', 'url' => $url, 'tracking_id' => $tracking_id));
+    $click_query = array(
+      'type' => 'click',
+      'url' => $url,
+      'tracking_id' => $tracking_id,
+    );
+
+    // Add information about the recipient if recipient tracking is enabled
+    if ($emailkit_statistics_message_recipient[$tracking_id]) {
+      $click_query['recipient_id'] = '[recipient:emailkit_statistics_id]';
+    }
+
+    $url = emailkit_statistics_url($click_query);
   }
   
   // Encode the URL
@@ -158,24 +219,41 @@ function _emailkit_statistics_message_render_url_rewrite($match) {
  * Private helper function for emailkit_statistics_emailkit_message_after_send() that prepares the message for statistics.
  */
 function _emailkit_statistics_message_after_send($message, $destination, $success) {
-  // This global array keeps track of links replaced during message rendering
-  global $emailkit_statistics_message_link;
+  // This static variable keeps track of which messages have been processed by this function already
+  static $processed = array();
   
+  // Get the unique identifier of the message
   $tracking_id = $message['#tracking_id'];
   
-  // Was the message sent successfully?
-  if ($success) {
-    // Add the message to the database
-    db_query("INSERT INTO {emailkit_statistics_message} (tracking_id, sent) VALUES ('%s', %d)", $tracking_id, time());
-  
-    // Add all links in the message to the database
-    foreach ($emailkit_statistics_message_link[$tracking_id] as $link_id => $link) {
-      db_query("INSERT INTO {emailkit_statistics_message_link} (tracking_id, link_id, url) VALUES ('%s', '%s', '%s')", $tracking_id, $link_id, $link['url']);
+  // Only process the message if it hasn't been processed yet and if this is a known destination or our last chance at processing the message
+  if (!in_array($tracking_id, $processed) && ($destination['#type'] == 'emailkit_default' || $message['#sending_depth'] == 0)) {
+    // This global array keeps track of links replaced during message rendering
+    global $emailkit_statistics_message_link;
+
+    // Was the message sent successfully?
+    if ($success) {
+      // Add the message to the database
+      db_query("INSERT INTO {emailkit_statistics_message} (tracking_id) VALUES ('%s')", $tracking_id);
+
+      // Add all links in the message to the database
+      foreach ($emailkit_statistics_message_link[$tracking_id] as $link_id => $link) {
+        db_query("INSERT INTO {emailkit_statistics_message_link} (tracking_id, link_id, url) VALUES ('%s', '%s', '%s')", $tracking_id, $link_id, $link['url']);
+      }
+
+      // Add all recipients of the message to the database, if applicable
+      if ($destination['#type'] == 'emailkit_default') {
+        foreach ($destination['#recipients'] as $recipient) {
+          db_query("INSERT INTO {emailkit_statistics_message_recipient} (tracking_id, recipient_id, address) VALUES ('%s', '%s', '%s')", $tracking_id, $recipient['emailkit_statistics_id'], $recipient['address']);
+        }
+      }
     }
-  }
+
+    // Clear out the global link array for this particular message
+    unset($emailkit_statistics_message_link[$tracking_id]);
   
-  // Clear out the global link array for this particular message
-  unset($emailkit_statistics_message_link[$tracking_id]);
+    // Mark this message as having been processed
+    $processed[] = $tracking_id;
+  }
 }
 
 /**

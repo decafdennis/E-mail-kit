@@ -8,7 +8,7 @@
 /**
  * The regular expression used to find recipient replacement tokens in the body of a message.
  */
-define('EMAILKIT_RECIPIENT_TOKEN_PATTERN', '/\[recipient:([^\s\]]+)\]/');
+define('EMAILKIT_RECIPIENT_TOKEN_PATTERN', '/\[recipient:(.+?)\]|%5Brecipient%3A(.+?)%5D/');
 
 /**
  * Implementation of hook_dispatcher_send() for the emailkit_default dispatcher.
@@ -171,8 +171,11 @@ function _emailkit_recipients_token_replacements($recipient) {
   
   foreach ($recipient as $key => $value) {
     $token = "[recipient:$key]";
-    
     $replacements[$token] = $value;
+
+    // Also replace tokens that have been URL encoded
+    $url_encoded_token = urlencode($token);
+    $replacements[$url_encoded_token] = urlencode($value);
   }
   
   return $replacements;

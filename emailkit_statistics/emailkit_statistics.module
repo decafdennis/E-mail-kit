@@ -17,22 +17,11 @@ function emailkit_statistics_menu() {
 }
 
 /**
- * Implementation of hook_emailkit_message_build().
- */
-function emailkit_statistics_emailkit_message_build($message_id, &$message) {
-  // Check whether statistics are enabled for this message
-  if (!empty($message['#emailkit_statistics'])) {
-    module_load_include('inc', 'emailkit_statistics');
-    _emailkit_statistics_message_build($message_id, $message);
-  }
-}
-
-/**
  * Implementation of hook_emailkit_message_before_send().
  */
 function emailkit_statistics_emailkit_message_before_send(&$message, &$destination) {
   // Check whether statistics are enabled for this message
-  if (!empty($message['#emailkit_statistics']) && $message['#sending_depth'] == 0) {
+  if (!empty($message['#emailkit_statistics'])) {
     module_load_include('inc', 'emailkit_statistics');
     _emailkit_statistics_message_before_send($message, $destination);
   }
@@ -54,7 +43,7 @@ function emailkit_statistics_emailkit_message_render($message, $format, &$output
  */
 function emailkit_statistics_emailkit_message_after_send($message, $destination, $success) {
   // Check whether statistics are enabled for this message
-  if (!empty($message['#emailkit_statistics']) && $message['#sending_depth'] == 0) {
+  if (!empty($message['#emailkit_statistics'])) {
     module_load_include('inc', 'emailkit_statistics');
     _emailkit_statistics_message_after_send($message, $destination, $success);
   }
