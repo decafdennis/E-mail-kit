@@ -21,66 +21,41 @@ function emailkit_statistics_uninstall() {
 function emailkit_statistics_schema() {
   $schema = array();
 
-  $schema['emailkit_statistics_message'] = array(
-    'description' => 'Contains information about messages for which statistics were enabled.',
+  $schema['emailkit_statistics_event'] = array(
+    'description' => 'Contains information about all the events that can occur with regard to messages for which statistics were enabled.',
     'fields' => array(
-      'tracking_id' => array(
-        'description' => 'The tracking identifier of the message.',
+      'eid' => array(
+        'description' => 'The identifier of the event.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
       ),
-      'hits' => array(
-        'description' => 'The number of times the message has been viewed.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'primary key' => array('tracking_id'),
-  );
-
-  $schema['emailkit_statistics_message_link'] = array(
-    'description' => 'Contains information about links in messages for which statistics were enabled.',
-    'fields' => array(
-      'tracking_id' => array(
-        'description' => 'The tracking identifier of the message.',
+      'token' => array(
+        'description' => 'The token of the message that is associated with this event.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
       ),
-      'link_id' => array(
-        'description' => 'The identifier of the link, which is the MD5 hash of the URL of the link.',
+      'type' => array(
+        'description' => 'The type of the event.',
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 8,
         'not null' => TRUE,
       ),
       'url' => array(
-        'description' => 'The URL of the link.',
+        'description' => 'The URL of the link that is associated with this event.',
         'type' => 'text',
-        'not null' => TRUE,
-      ),
-      'hits' => array(
-        'description' => 'The number of times the link has been clicked.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
+        'not null' => FALSE,
       ),
     ),
-    'primary key' => array('tracking_id', 'link_id'),
+    'primary key' => array('eid'),
   );
 
-  $schema['emailkit_statistics_message_recipient'] = array(
-    'description' => 'Contains information about recipients of messages for which statistics were enabled.',
+  $schema['emailkit_statistics_recipient'] = array(
+    'description' => 'Contains information about all the recipients that can trigger an event.',
     'fields' => array(
-      'tracking_id' => array(
-        'description' => 'The tracking identifier of the message.',
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-      ),
-      'recipient_id' => array(
-        'description' => 'The identifier of the recipient, which is the MD5 hash of the e-mail address of the recipient.',
+      'rid' => array(
+        'description' => 'The identifier of the recipient.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
@@ -88,47 +63,46 @@ function emailkit_statistics_schema() {
       'address' => array(
         'description' => 'The e-mail address of the recipient.',
         'type' => 'text',
-        'not null' => TRUE,
-      ),
-      'hits' => array(
-        'description' => 'The number of times the message has been viewed by the recipient.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
+        'not null' => FALSE,
       ),
     ),
-    'primary key' => array('tracking_id', 'recipient_id'),
+    'primary key' => array('rid'),
   );
 
-  $schema['emailkit_statistics_message_recipient_link'] = array(
-    'description' => 'Contains information about links clicked by recipients of messages for which statistics were enabled.',
+  $schema['emailkit_statistics_log'] = array(
+    'description' => 'Contains information about all the events that have occured with regard to messages for which statistics were enabled.',
     'fields' => array(
-      'tracking_id' => array(
-        'description' => 'The tracking identifier of the message.',
+      'lid' => array(
+        'description' => 'The identifier of this log entry.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'eid' => array(
+        'description' => 'The identifier of the event that was triggered.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
       ),
-      'recipient_id' => array(
-        'description' => 'The identifier of the recipient, which is the MD5 hash of the e-mail address of the recipient.',
+      'rid' => array(
+        'description' => 'The recipient that triggered the event, if any.',
         'type' => 'varchar',
         'length' => 32,
-        'not null' => TRUE,
+        'not null' => FALSE,
       ),
-      'link_id' => array(
-        'description' => 'The identifier of the link, which is the MD5 hash of the URL of the link.',
+      'hostname' => array(
+        'description' => 'The name of the host that triggered the event.',
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 255,
         'not null' => TRUE,
       ),
-      'hits' => array(
-        'description' => 'The number of times the link has been clicked by the recipient.',
+      'timestamp' => array(
+        'description' => 'The UNIX timestamp of the time at which the event was triggered.',
         'type' => 'int',
+        'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => 0,
       ),
     ),
-    'primary key' => array('tracking_id', 'recipient_id', 'link_id'),
+    'primary key' => array('lid'),
   );
 
   return $schema;

@@ -7,8 +7,10 @@
 function emailkit_statistics_menu() {
   $items = array();
   
-  $items['emailkit/statistics'] = array(
+  // Note: we use emailkit/s instead of emailkit/statistics, because this might make the URL less conspicuous to spam filters or virus scanners
+  $items['emailkit/s'] = array(
     'page callback' => 'emailkit_statistics_page',
+    'page arguments' => array(2),
     'access callback' => TRUE,
     'file' => 'emailkit_statistics.inc',
   );
@@ -30,11 +32,11 @@ function emailkit_statistics_emailkit_message_before_send(&$message, &$destinati
 /**
  * Implementation of hook_emailkit_message_render().
  */
-function emailkit_statistics_emailkit_message_render($message, $format, &$output) {
+function emailkit_statistics_emailkit_message_render($message, $format, &$body, &$destination = NULL) {
   // Check whether statistics are enabled for this message
   if (!empty($message['#emailkit_statistics'])) {
     module_load_include('inc', 'emailkit_statistics');
-    _emailkit_statistics_message_render($message, $format, $output);
+    _emailkit_statistics_message_render($message, $format, $body, $destination);
   }
 }
 
@@ -50,13 +52,13 @@ function emailkit_statistics_emailkit_message_after_send($message, $destination,
 }
 
 /**
- * Returns a page that displays statistics for the message with the given tracking identifier.
+ * Returns a page that displays statistics for the message with the given token.
  *
- * @param $tracking_id The tracking identifier of the message.
+ * @param $token The token of the message.
  *
- * @return The page content or NULL if no information for the given tracking identifier can be found.
+ * @return The page content or NULL if no message for the given token can be found.
  */
-function emailkit_statistics_message_page($tracking_id) {
+function emailkit_statistics_message_page($token) {
   module_load_include('inc', 'emailkit_statistics');
-  return _emailkit_statistics_message_page($tracking_id);
+  return _emailkit_statistics_message_page($token);
 }
