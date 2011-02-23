@@ -303,7 +303,11 @@ function _emailkit_statistics_message_after_send($message, $destination, $succes
 
     // Was the message sent successfully?
     if ($success) {
-      // Add all events to the database
+      // Add an event to the database that we will use to indicate when and to whom the message was sent
+      $send_eid = md5($token . 'send');
+      db_query("INSERT INTO {emailkit_statistics_event} (eid, token, type) VALUES ('%s', '%s', '%s')", $send_eid, $token, 'send');
+
+      // Add all other events to the database
       foreach ($emailkit_statistics_message_event[$token] as $eid => $event) {
         if (isset($event['url'])) {
           db_query("INSERT INTO {emailkit_statistics_event} (eid, token, type, url) VALUES ('%s', '%s', '%s', '%s')", $eid, $token, $event['type'], $event['url']);
@@ -313,11 +317,18 @@ function _emailkit_statistics_message_after_send($message, $destination, $succes
         }
       }
 
-      // Add all recipients to the database, if necessary
+      // Add all recipients to the database, if necessary, and trigger the sending event
+      $hostname = ip_address();
+      $timestamp = time();
       if ($destination['#type'] == 'emailkit_default') {
         foreach ($destination['#recipients'] as $recipient) {
-          db_query("INSERT IGNORE INTO {emailkit_statistics_recipient} (rid, address) VALUES ('%s', '%s')", $recipient['emailkit_statistics_rid'], $recipient['address']);
+          $rid = $recipient['emailkit_statistics_rid'];
+          db_query("INSERT IGNORE INTO {emailkit_statistics_recipient} (rid, address) VALUES ('%s', '%s')", $rid, $recipient['address']);
+          db_query("INSERT INTO {emailkit_statistics_log} (eid, rid, hostname, timestamp) VALUES ('%s', '%s', '%s', %d)", $send_eid, $rid, $hostname, $timestamp);
         }
+      }
+      else {
+        db_query("INSERT INTO {emailkit_statistics_log} (eid, hostname, timestamp) VALUES ('%s', '%s', %d)", $eid, $hostname, $timestamp);
       }
     }
 
