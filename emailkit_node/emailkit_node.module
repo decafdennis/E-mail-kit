@@ -119,6 +119,6 @@ function emailkit_node_emailkit_message_after_send($message, $destination, $succ
     global $user;
 
     // Keep a record of this message
-    db_query("INSERT INTO {emailkit_node_message} (tracking_id, nid, uid, sent) VALUES ('%s', %d, %d, %d)", $message['#tracking_id'], $message['#node']->nid, $user->uid, time());
+    db_query("INSERT INTO {emailkit_node_message} (token, nid, uid, sent) VALUES ('%s', %d, %d, %d)", $message['#token'], $message['#node']->nid, $user->uid, time());
   }
 }

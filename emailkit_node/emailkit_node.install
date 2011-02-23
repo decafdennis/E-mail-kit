@@ -24,8 +24,8 @@ function emailkit_node_schema() {
   $schema['emailkit_node_message'] = array(
     'description' => 'Contains information about the messages sent from this module.',
     'fields' => array(
-      'tracking_id' => array(
-        'description' => 'The tracking identifier of the message.',
+      'token' => array(
+        'description' => 'The token of the message.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
@@ -48,7 +48,7 @@ function emailkit_node_schema() {
         'not null' => TRUE,
       ),
     ),
-    'primary key' => array('tracking_id'),
+    'primary key' => array('token'),
   );
 
   return $schema;

@@ -227,6 +227,6 @@ function hook_emailkit_message_render($message, $format, &$output) {
 function hook_emailkit_message_after_send($message, $destination, $success) {
   // Only act if this is not a recursive invocation of emailkit_send()
   if ($success && $message['#sending_depth'] == 0) {
-    // TODO: Save information about the message using it's #tracking_id
+    // TODO: Save information about the message using it's #token
   }
 }

@@ -12,6 +12,11 @@ define('EMAILKIT_MESSAGE_FORMAT_HTML', 0);
 define('EMAILKIT_MESSAGE_FORMAT_TEXT', 1);
 
 /**
+ * The length of a unique message token. This is the length of a hexadecimal MD5 hash.
+ */
+define('EMAILKIT_MESSAGE_TOKEN_LENGTH', 32);
+
+/**
  * Implementation of hook_perm().
  */
 function emailkit_perm() {

@@ -337,9 +337,9 @@ function _emailkit_message($message_id) {
     return NULL;
   }
   
-  // Set the message id and unique tracking id
+  // Set the message identifier and the unique message token
   $message['#id'] = $message_id;
-  $message['#tracking_id'] = md5(uniqid(mt_rand(), TRUE));
+  $message['#token'] = md5(uniqid(mt_rand(), TRUE));
 
   // Set default message regions
   $message['header']['#weight'] = -0.1;
