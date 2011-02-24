@@ -109,7 +109,7 @@ function emailkit_node_preprocess_node(&$variables) {
   $node = $variables['node'];
 
   // Check if this node came through theme_emailkit_node()
-  if (isset($node->build_mode) && $node->build_mode == 'emailkit') {
+  if (isset($node->build_mode) && $node->build_mode === 'emailkit') {
     // Suggest node-emailkit.tpl.php and node-emailkit-TYPE.tpl.php
     $variables['template_files'][] = 'node-emailkit';
     $variables['template_files'][] = 'node-emailkit-' . $node->type;
