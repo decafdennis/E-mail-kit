@@ -34,6 +34,23 @@ function emailkit_node_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
+  $items['node/%node/message/preview'] = array(
+    'title' => 'Preview message',
+    'page callback' => 'emailkit_node_preview',
+    'page arguments' => array(1),
+    'access callback' => 'emailkit_node_access',
+    'access arguments' => array(1),
+    'file' => 'emailkit_node.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['node/%node/message/preview/%'] = array(
+    'page callback' => 'emailkit_node_preview_format',
+    'page arguments' => array(1, 4),
+    'access callback' => 'emailkit_node_access',
+    'access arguments' => array(1),
+    'file' => 'emailkit_node.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
   $items['node/%node/message/sent'] = array(
     'title' => 'Sent messages',
     'page callback' => 'emailkit_node_sent',

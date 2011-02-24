@@ -8,10 +8,10 @@
 /**
  * Implementation of hook_message() for the emailkit_node message.
  */
-function emailkit_node_message($message_id, $node) {
+function emailkit_node_message($message_id, $node, $preview = FALSE) {
   return array(
     '#node' => $node, // For later reference
-    '#emailkit_statistics' => TRUE, // Enables statistics, if the emailkit_statistics module is enabled
+    '#emailkit_statistics' => !$preview, // Enables statistics, if the emailkit_statistics module is enabled
     '#subject' => $node->title,
     'content' => array(
       'node' => array(

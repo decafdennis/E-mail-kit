@@ -53,6 +53,64 @@ function emailkit_node_send_form_submit($form, &$form_state) {
 }
 
 /**
+ * Returns the page for the preview message tab on a node.
+ */
+function emailkit_node_preview($node) {
+  $output = '<dl>';
+
+  $options = array();
+  $options['attributes'] = array();
+
+  // Show in a lightbox, if the lightbox2 module is available
+  if (module_exists('lightbox2')) {
+    $options['attributes']['rel'] = 'lightframe[emailkit_node_preview]';
+  }
+
+  $output .= '<dt>'. l(t('Preview HTML version'), 'node/' . $node->nid . '/message/preview/html', $options) .'</dt>';
+  $output .= '<dd>'. t('Most e-mail readers are able to display the HTML version of the message.') .'</dd>';
+
+  $output .= '<dt>'. l(t('Preview text version'), 'node/' . $node->nid . '/message/preview/text', $options) .'</dt>';
+  $output .= '<dd>'. t('E-mail readers that are not able to display the HTML version, or recipients who do not wish to receive HTML messages, will see this textual version of the message.') .'</dd>';
+
+  $output .= '</dl>';
+  return $output;
+}
+
+/**
+ * Previews the message for a node in the given format.
+ */
+function emailkit_node_preview_format($node, $format) {
+  if (!in_array($format, array('text', 'html'))) {
+    return drupal_not_found();
+  }
+
+  // Build the message
+  $message = emailkit_message('emailkit_node', $node, TRUE);
+
+  switch ($format) {
+    case 'html':
+      // Render the message
+      $html = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_HTML);
+
+      // Display the message, suppressing any devel output
+      drupal_set_header('Content-Type: text/html; charset=utf-8');
+      $GLOBALS['devel_shutdown'] = FALSE;
+      print($html);
+      break;
+
+    case 'text':
+      // Render the message
+      $text = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT);
+
+      // Display the message, suppressing any devel output
+      drupal_set_header('Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes');
+      $GLOBALS['devel_shutdown'] = FALSE;
+      print($text);
+      break;
+  }
+}
+
+/**
  * Returns the page for the sent messages tab on a node.
  */
 function emailkit_node_sent($node) {
