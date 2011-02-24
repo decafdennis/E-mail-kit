@@ -102,9 +102,6 @@ function emailkit_help($path, $arg) {
 function emailkit_elements() {
   $elements = array();
 
-  // E-mail messages are structured arrays with #type emailkit_message
-  $elements['emailkit_message'] = array();
-
   // Form element that can be used to specify a destination by selecting and configuring one of the exposed destination types
   $elements['emailkit_destination_select'] = array(
     '#input' => TRUE,
@@ -123,7 +120,7 @@ function emailkit_theme() {
 
   $theme['emailkit_message'] = array(
     'arguments' => array('message' => array()),
-    'template' => 'emailkit_message',
+    'template' => 'emailkit-message',
   );
   
   $theme['emailkit_destination_select'] = array(

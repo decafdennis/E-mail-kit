@@ -359,7 +359,7 @@ function _emailkit_message($message_id) {
   }
   
   // Prepare the message for rendering
-  $message['#type'] = 'emailkit_message';
+  $message['#theme'] = 'emailkit_message';
   _emailkit_message_prepare($message);
   
   return $message;
