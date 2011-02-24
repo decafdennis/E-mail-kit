@@ -37,7 +37,7 @@ function emailkit_drupal_message($message_id, $drupal_message) {
   }
   
   // TODO: Process custom headers in $drupal_message
-  return array(
+  $message = array(
     '#subject' => $drupal_message['subject'],
     'content' => array(
       'body' => array(
@@ -45,4 +45,11 @@ function emailkit_drupal_message($message_id, $drupal_message) {
       ),
     ),
   );
+
+  // Keep the Drupal message identifier around
+  if (isset($drupal_message['id'])) {
+    $message['#drupal_id'] = $drupal_message['id'];
+  }
+
+  return $message;
 }
