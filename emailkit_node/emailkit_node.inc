@@ -32,7 +32,7 @@ function theme_emailkit_node($element) {
   $node = drupal_clone($element['#node']);
   
   // Set the node's build mode. This is currently used in emailkit_node_preprocess_node(), but also by CCK
-  $node->build_mode = 'emailkit_node';
+  $node->build_mode = 'emailkit';
 
   return node_view($node);
 }
