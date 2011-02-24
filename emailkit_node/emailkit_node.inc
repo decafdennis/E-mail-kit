@@ -36,3 +36,39 @@ function theme_emailkit_node($element) {
 
   return node_view($node);
 }
+
+/**
+ * Formats the given nodereference element.
+ */
+function theme_emailkit_formatter_emailkit($element) {
+  // Keeps track of nodes that we have formatted already
+  static $formatted_nodes = array();
+
+  $output = "";
+
+  // Clear out the array of formatted nodes, if the referencing node is at the root of the reference tree
+  if (!isset($element['#node']->referencing_node)) {
+    $formatted_nodes = array();
+  }
+
+  // Try to load the reference node
+  if (!empty($element['#item']['safe']['nid'])) {
+    $referenced_node = node_load($element['#item']['safe']['nid']);
+  }
+
+  // Only continue if the node can be found and if we haven't already formatted it, to prevent infinite recursion
+  if (isset($referenced_node) && !in_array($referenced_node->nid, $formatted_nodes)) {
+    // Perform the primary purpose of this formatter: setting the node's build mode
+    $referenced_node->build_mode = 'emailkit';
+
+    $referenced_node->referencing_node = $element['#node'];
+    $referenced_node->referencing_field = content_fields($element['#field_name'], $element['#type_name']);
+
+    $output = node_view($referenced_node);
+
+    // Remember that we have formatted this node, to prevent infinite recursion
+    $formatted_nodes[] = $referenced_node->nid;
+  }
+
+  return $output;
+}

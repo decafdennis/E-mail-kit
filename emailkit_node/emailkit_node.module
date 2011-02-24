@@ -90,13 +90,18 @@ function emailkit_node_theme() {
   
   // Should be overridden by themes that wish to customize the rendering of nodes in messages
   $theme['emailkit_node'] = array(
-    'arguments' => array('element' => array()),
+    'arguments' => array('element' => NULL),
     'file' => 'emailkit_node.inc',
   );
   
   $theme['emailkit_node_sent'] = array(
     'arguments' => array('messages' => array()),
     'file' => 'emailkit_node.pages.inc',
+  );
+
+  $theme['emailkit_formatter_emailkit'] = array(
+    'arguments' => array('element' => NULL),
+    'file' => 'emailkit_node.inc',
   );
 
   return $theme;
@@ -114,6 +119,16 @@ function emailkit_node_preprocess_node(&$variables) {
     $variables['template_files'][] = 'node-emailkit';
     $variables['template_files'][] = 'node-emailkit-' . $node->type;
   }
+
+  // Check if this node is referenced by a node that came through theme_emailkit_node()
+  if (isset($node->referencing_node) && isset($node->referencing_node->build_mode) && $node->referencing_node->build_mode === 'emailkit') {
+    // Suggest additional templates
+    $field = $node->referencing_field;
+    $variables['template_files'][] = 'node-emailkit-nodereference';
+    $variables['template_files'][] = 'node-emailkit-nodereference-'. $field['field_name'];
+    $variables['template_files'][] = 'node-emailkit-nodereference-'. $node->type;
+    $variables['template_files'][] = 'node-emailkit-nodereference-'. $field['field_name'] .'-'. $node->type;
+  }
 }
 
 /**
@@ -129,6 +144,20 @@ function emailkit_node_content_build_modes() {
           'title' => t('E-mail'),
         ),
       ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function emailkit_field_formatter_info() {
+  // This formatter can be used to triggering the emailkit build mode
+  return array(
+    'emailkit' => array(
+      'label' => t('E-mail'),
+      'field types' => array('nodereference'),
+      'multiple values' => CONTENT_HANDLE_CORE,
     ),
   );
 }
