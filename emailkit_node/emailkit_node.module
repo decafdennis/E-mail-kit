@@ -83,17 +83,6 @@ function emailkit_node_access($node) {
 }
 
 /**
- * Implementation of hook_elements().
- */
-function emailkit_node_elements() {
-  $elements = array();
-  
-  $elements['emailkit_node'] = array();
-  
-  return $elements;
-}
-
-/**
  * Implementation of hook_theme().
  */
 function emailkit_node_theme() {
@@ -111,6 +100,37 @@ function emailkit_node_theme() {
   );
 
   return $theme;
+}
+
+/**
+ * Implementation of hook_preprocess_node().
+ */
+function emailkit_node_preprocess_node(&$variables) {
+  $node = $variables['node'];
+
+  // Check if this node came through theme_emailkit_node()
+  if (isset($node->build_mode) && $node->build_mode == 'emailkit_node') {
+    // Suggest emailkit-node.tpl.php and emailkit-node-TYPE.tpl.php
+    $variables['template_files'][] = 'emailkit-node';
+    $variables['template_files'][] = 'emailkit-node-' . $node->type;
+  }
+}
+
+/**
+ * Implementation of hook_content_build_modes().
+ */
+function emailkit_node_content_build_modes() {
+  // Note: in Drupal 7, we should implement hook_entity_info_alter() and add a view mode to the node entity
+  return array(
+    'emailkit_node' => array(
+      'title' => t('E-mail'),
+      'build modes' => array(
+        'emailkit_node' => array(
+          'title' => t('E-mail'),
+        ),
+      ),
+    ),
+  );
 }
 
 /**

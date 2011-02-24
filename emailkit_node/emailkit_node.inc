@@ -15,7 +15,7 @@ function emailkit_node_message($message_id, $node, $preview = FALSE) {
     '#subject' => $node->title,
     'content' => array(
       'node' => array(
-        '#type' => 'emailkit_node',
+        '#theme' => 'emailkit_node',
         '#node' => $node,
       ),
     ),
@@ -31,5 +31,8 @@ function theme_emailkit_node($element) {
   // Clone the node, since node_view() might alter it preventing it from being rendered again
   $node = drupal_clone($element['#node']);
   
+  // Set the node's build mode. This is currently used in emailkit_node_preprocess_node(), but also by CCK
+  $node->build_mode = 'emailkit_node';
+
   return node_view($node);
 }
