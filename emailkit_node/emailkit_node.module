@@ -87,8 +87,8 @@ function emailkit_node_access($node) {
  */
 function emailkit_node_theme() {
   $theme = array();
-  
-  // Should be overridden by themes that wish to customize the rendering of nodes in messages
+
+  // Used for rendering a node in a message. The default behavior is to use node_view() with $node->build_mode = 'emailkit'. This in turn will try to use node-emailkit-TYPE.tpl.php or node-emailkit.tpl.php to render the node.
   $theme['emailkit_node'] = array(
     'arguments' => array('element' => NULL),
     'file' => 'emailkit_node.inc',
@@ -99,6 +99,7 @@ function emailkit_node_theme() {
     'file' => 'emailkit_node.pages.inc',
   );
 
+  // See emailkit_field_formatter_info()
   $theme['emailkit_formatter_emailkit'] = array(
     'arguments' => array('element' => NULL),
     'file' => 'emailkit_node.inc',
@@ -113,16 +114,16 @@ function emailkit_node_theme() {
 function emailkit_node_preprocess_node(&$variables) {
   $node = $variables['node'];
 
-  // Check if this node came through theme_emailkit_node()
+  // Is this node set to our build mode?
   if (isset($node->build_mode) && $node->build_mode === 'emailkit') {
-    // Suggest node-emailkit.tpl.php and node-emailkit-TYPE.tpl.php
+    // Suggest node-emailkit.tpl.php and node-emailkit-TYPE.tpl.php, to allow custom templates for nodes in messages
     $variables['template_files'][] = 'node-emailkit';
     $variables['template_files'][] = 'node-emailkit-' . $node->type;
   }
 
-  // Check if this node is referenced by a node that came through theme_emailkit_node()
+  // Is this node's referencing node set to our build mode?
   if (isset($node->referencing_node) && isset($node->referencing_node->build_mode) && $node->referencing_node->build_mode === 'emailkit') {
-    // Suggest additional templates
+    // Suggest additional templates, to allow custom templates for nodes that are referenced in messages
     $field = $node->referencing_field;
     $variables['template_files'][] = 'node-emailkit-nodereference';
     $variables['template_files'][] = 'node-emailkit-nodereference-'. $field['field_name'];
@@ -135,6 +136,7 @@ function emailkit_node_preprocess_node(&$variables) {
  * Implementation of hook_content_build_modes().
  */
 function emailkit_node_content_build_modes() {
+  // Register the custom build mode with CCK, so that it can be used to customize the display of CCK fields in messages
   // Note: in Drupal 7, we should implement hook_entity_info_alter() and add a view mode to the node entity
   return array(
     'emailkit' => array(
@@ -152,7 +154,7 @@ function emailkit_node_content_build_modes() {
  * Implementation of hook_field_formatter_info().
  */
 function emailkit_field_formatter_info() {
-  // This formatter can be used to triggering the emailkit build mode
+  // This formatter can be used for a node reference field for the emailkit build mode, so that all referenced nodes will get the emailkit build mode as well
   return array(
     'emailkit' => array(
       'label' => t('E-mail'),

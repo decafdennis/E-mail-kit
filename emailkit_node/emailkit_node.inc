@@ -31,7 +31,7 @@ function theme_emailkit_node($element) {
   // Clone the node, since node_view() might alter it preventing it from being rendered again
   $node = drupal_clone($element['#node']);
   
-  // Set the node's build mode. This is currently used in emailkit_node_preprocess_node(), but also by CCK
+  // Set the node's build mode. This is currently used in emailkit_node_preprocess_node(), but it can also be used by CCK
   $node->build_mode = 'emailkit';
 
   return node_view($node);
@@ -52,7 +52,7 @@ function theme_emailkit_formatter_emailkit($element) {
   }
 
   // Try to load the reference node
-  if (!empty($element['#item']['safe']['nid'])) {
+  if (isset($element['#item']['safe']['nid'])) {
     $referenced_node = node_load($element['#item']['safe']['nid']);
   }
 
