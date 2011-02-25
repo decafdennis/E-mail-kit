@@ -1,0 +1,12 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_emailkit_message_render().
+ */
+function emailkit_premailer_emailkit_message_render($message, $format, &$body) {
+  if ($format == EMAILKIT_MESSAGE_FORMAT_HTML) {
+    module_load_include('inc', 'emailkit_premailer');
+    $body = emailkit_premailer_inline_css($body);
+  }
+}

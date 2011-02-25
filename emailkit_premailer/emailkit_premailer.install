@@ -1,0 +1,10 @@
+<?php
+// Developed by Dennis Stevense for Digital Deployment
+
+/**
+ * Implementation of hook_install().
+ */
+function emailkit_premailer_install() {
+  // Make sure our implementation of hook_emailkit_message_render() is called at or near the end, because other modules might use it to add CSS
+  db_query("UPDATE {system} SET weight = 100 WHERE name = 'emailkit_premailer'");
+}

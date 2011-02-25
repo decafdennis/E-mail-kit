@@ -398,7 +398,7 @@ function _emailkit_message_render($message, $format, &$destination = NULL) {
   $output = _emailkit_resolve_urls(drupal_render($message));
 
   if ($format == EMAILKIT_MESSAGE_FORMAT_TEXT) {
-    // Apply a very simply HTML to text conversion
+    // Apply a very simple HTML to text conversion
     // TODO: Allow stuff to be rendered as plain text, or allow stuff to be specified in plain text and be converted to HTML?
     $output = drupal_html_to_text($output);
   }
