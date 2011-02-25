@@ -48,6 +48,9 @@ function emailkit_statistics_schema() {
         'not null' => FALSE,
       ),
     ),
+    'indexes' => array(
+      'token_eid' => array('token', 'eid'),
+    ),
     'primary key' => array('eid'),
   );
 

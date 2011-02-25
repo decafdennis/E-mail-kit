@@ -119,7 +119,7 @@ function emailkit_node_sent($node) {
   
   // If the statistics module is enabled, also fetch a flag indicating whether statistics are available for a message
   if (module_exists('emailkit_statistics')) {
-    $result = db_query("SELECT n.token, n.uid, n.sent, s.token IS NOT NULL AS statistics FROM {emailkit_node_message} n LEFT JOIN {emailkit_statistics_event} s ON n.token = s.token WHERE n.nid = %d ORDER BY n.sent DESC LIMIT 1", $node->nid);
+    $result = db_query("SELECT n.token, n.uid, n.sent, s.token IS NOT NULL AS statistics FROM {emailkit_node_message} n LEFT JOIN {emailkit_statistics_event} s ON n.token = s.token WHERE n.nid = %d GROUP BY n.token ORDER BY n.sent DESC", $node->nid);
   }
   else {
     $result = db_query("SELECT token, uid, sent, 0 AS statistics FROM {emailkit_node_message} WHERE nid = %d ORDER BY sent DESC", $node->nid);

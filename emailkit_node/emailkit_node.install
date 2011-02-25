@@ -48,6 +48,9 @@ function emailkit_node_schema() {
         'not null' => TRUE,
       ),
     ),
+    'unique keys' => array(
+      'nid_token_sent' => array('nid', 'token', 'sent'),
+    ),
     'primary key' => array('token'),
   );
 
