@@ -134,11 +134,47 @@ function emailkit_statistics_page() {
   }
 
   // Try to load the event from the database
-  $event = db_fetch_object(db_query("SELECT type, url FROM {emailkit_statistics_event} WHERE eid = '%s'", $eid));
+  $event = db_fetch_object(db_query("SELECT token, type, url FROM {emailkit_statistics_event} WHERE eid = '%s'", $eid));
   if (!isset($event)) {
     return drupal_not_found();
   }
 
+  // If this recipient hasn't triggered the view event yet, the click event will trigger it implicitly
+  if ($event->type == 'click') {
+    // Find the view event for this message
+    $view_event_eid = db_result(db_query("SELECT eid FROM {emailkit_statistics_event} WHERE token = '%s' AND type = 'view'", $event->token));
+
+    if (!empty($view_event_eid)) {
+      // Find out whether the recipient has already triggered this event
+      $view_log_timestamp = NULL;
+      if (isset($rid)) {
+        $view_log_timestamp = db_result(db_query("SELECT timestamp FROM {emailkit_statistics_log} WHERE eid = '%s' AND rid = '%s'", $view_event_eid, $rid));
+      }
+      else {
+        $view_log_timestamp = db_result(db_query("SELECT timestamp FROM {emailkit_statistics_log} WHERE eid = '%s'", $view_event_eid));
+      }
+
+      // Trigger the view event if it hasn't been triggerd yet
+      if (empty($view_log_timestamp)) {
+        _emailkit_statistics_event_log($view_event_eid, $rid);
+      }
+    }
+  }
+
+  // Log the event
+  _emailkit_statistics_event_log($eid, $rid);
+
+  // Execute the event
+  return _emailkit_statistics_event_execute($event);
+}
+
+/**
+ * Logs the occurance of the given event for the given recipient.
+ *
+ * @param $eid The event identifier.
+ * @param $rid The recipient identifier.
+ */
+function _emailkit_statistics_event_log($eid, $rid) {
   // Log the occurance of this event to the database
   $hostname = ip_address();
   $timestamp = time();
@@ -148,7 +184,14 @@ function emailkit_statistics_page() {
   else {
     db_query("INSERT INTO {emailkit_statistics_log} (eid, hostname, timestamp) VALUES ('%s', '%s', %d)", $eid, $hostname, $timestamp);
   }
+}
 
+/**
+ * Executes the given event.
+ *
+ * @param $event The event.
+ */
+function _emailkit_statistics_event_execute($event) {
   // Execute the event
   switch ($event->type) {
     case 'click':
@@ -377,7 +420,7 @@ function _emailkit_statistics_message_page($token) {
   $rows = array();
 
   // Add a row that indicates the total number of recipients
-  $sent = 1;
+  $sent = 0;
   foreach ($events['send'] as $event) {
     $sent = $event->hits;
   }
@@ -385,6 +428,11 @@ function _emailkit_statistics_message_page($token) {
     t('Number of recipients'),
     sprintf("%d", $sent),
   );
+
+  // To prevent division by zero
+  if ($sent == 0) {
+    $sent = 1;
+  }
 
   // Add rows indicating how many times the message has been viewed
   $total_views = 0;
