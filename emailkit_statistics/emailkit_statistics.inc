@@ -16,6 +16,21 @@ define('EMAILKIT_STATISTICS_EID_LENGTH', 32);
 define('EMAILKIT_STATISTICS_RID_LENGTH', 32);
 
 /**
+ * Defines the index of the prefix capture in the match passed into _emailkit_statistics_message_render_url_rewrite().
+ */
+define('EMAILKIT_STATISTICS_CAPTURE_PREFIX', 1);
+
+/**
+ * Defines the index of the attribute name capture in the match passed into _emailkit_statistics_message_render_url_rewrite().
+ */
+define('EMAILKIT_STATISTICS_CAPTURE_ATTRIBUTE', 2);
+
+/**
+ * Defines the index of the URL capture in the match passed into _emailkit_statistics_message_render_url_rewrite().
+ */
+define('EMAILKIT_STATISTICS_CAPTURE_URL', 3);
+
+/**
  * Generates an absolute URL that can be used to keep statistics on a message.
  *
  * @param $eid The event identifier. Required.
@@ -217,7 +232,7 @@ function _emailkit_statistics_message_render($message, $format, &$body, &$destin
   $domain = "(?:[A-Za-z0-9._+-]+\.)*[A-Za-z0-9._+-]+";
   $port = ":\d{1,5}";
   $path = "[a-zA-Z0-9:%_+*~#&\[\]=/;?\.,-]*[a-zA-Z0-9:%_+*~#&\[\]=/;-]";
-  $pattern = "^$protocol(?:$authentication)?(?:$ip|$domain)(?:$port)?/?$path^";
+  $pattern = "^((?:(href|src)=[\"']\\s*)?)($protocol(?:$authentication)?(?:$ip|$domain)(?:$port)?/?$path)^";
 
   // Pass arguments to _emailkit_statistics_message_render_url_rewrite() using global variables (ouch!)
   $GLOBALS['emailkit_statistics_message_render_message'] = $message;
@@ -236,14 +251,17 @@ function _emailkit_statistics_message_render_url_rewrite($match) {
   $format = $GLOBALS['emailkit_statistics_message_render_format'];
   $destination =& $GLOBALS['emailkit_statistics_message_render_destination'];
 
-  // Decode the URL
-  $url = $match[0];
+  // Decode the URL and get the attribute
+  $prefix = $match[EMAILKIT_STATISTICS_CAPTURE_PREFIX];
+  $attribute = $match[EMAILKIT_STATISTICS_CAPTURE_ATTRIBUTE];
+  $url = $match[EMAILKIT_STATISTICS_CAPTURE_URL];
   if ($format == EMAILKIT_MESSAGE_FORMAT_HTML) {
     $url = htmlspecialchars_decode($url);
   }
   
-  // Rewrite the URL, but only if it is not an emailkit URL
-  if (strpos($url, url('emailkit', array('absolute' => TRUE))) === FALSE) {
+  // Rewrite the URL, but only if it is not a resource or an emailkit URL
+  $emailkit_base_url = url('emailkit', array('absolute' => TRUE));
+  if ($attribute != 'src' && strpos($url, $emailkit_base_url) === FALSE) {
     // This global array keeps track of events generated during message sending
     global $emailkit_statistics_message_event;
     
@@ -283,7 +301,7 @@ function _emailkit_statistics_message_render_url_rewrite($match) {
     $url = htmlspecialchars($url);
   }
   
-  return $url;
+  return $prefix . $url;
 }
 
 /**
