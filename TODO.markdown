@@ -1,21 +1,18 @@
 Next
 ====
 
-* CSS style inlining
+* Improve end-user workflow for subscribing and unsubscribing
+	* Allow subscribers to change their e-mail address
+	* Allow subscribers to unsubscribe from the e-mail
+	* ...
+
 * CAN-SPAM compliance
-* Statistics module that can be enabled per message type
-	* Sent (how many, when)
-	* Opened (how many, when, hook)
 
 Icebox
 ======
 
 * Keep track of subscriber opt in/out history
-* E-mail formatting
-	* Template system
-	* Hook system
-	* Placeholder/token system
-	* Add unsubscribe link
+* Enable emailkit_node only for a selection of content types and/or terms
 * E-mail list management
 	* Bounce detection
 	* Campaign statistics
