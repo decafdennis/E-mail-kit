@@ -215,7 +215,6 @@ function emailkit_list_admin_subscriber_list_form(&$form_state) {
   
   $header = array(
     array('data' => t('E-mail address'), 'field' => 'address'),
-    array('data' => t('Status'), 'field' => 'confirmed'),
   );
 
   $form['subscribers'] = array();
@@ -256,8 +255,16 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
     // Load the associated user
     $user = emailkit_list_user_load_by_address($subscriber->address);
     
+    // Load the subscriber's subscriptions
+    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+
     $form['#subscriber'] = $subscriber;
     $form['#user'] = $user;
+    $form['#subscriptions'] = $subscriptions;
+  }
+  else {
+    $user = NULL;
+    $subscriptions = array();
   }
 
   $form['address'] = array(
@@ -296,20 +303,27 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
       '#description' => t('The username of the subscriber. If you enter the name of a registered user, the subscriber will be associated with that user account and its e-mail address.'),
     );
   }
-  
-  if (isset($subscriber)) {
-    $form['confirmed'] = array(
-      '#type' => 'item',
-      '#title' => t('Status'),
-      '#value' => $subscriber->confirmed ? t('Confirmed') : t('Unconfirmed'),
-      '#description' => t('Indicates whether the subscriber has confirmed their subscription. This is true if subscription happened while being logged in or if the link in a subscription confirmation e-mail was clicked.'),
-    );
-  }
 
   $options = array();
   $lists = emailkit_list_load_all();
   foreach ($lists as $lid => $list) {
-    $options[$lid] = $list->name;
+    $option = check_plain($list->name);
+    
+    // If the subscriber has been subscribed to this list, indicate whether it is a confirmed or unconfirmed subscription
+    if (isset($subscriptions[$lid])) {
+      $subscription = $subscriptions[$lid];
+      
+      if (!empty($subscription->confirm_date)) {
+        $confirm_subtext = t('confirmed on %date', array('%date' => format_date($subscription->confirm_date, 'small')));
+      }
+      else {
+        $confirm_subtext = t('unconfirmed');
+      }
+      
+      $option .= " (" . $confirm_subtext . ")";
+    }
+    
+    $options[$lid] = $option;
   }
   
   if (empty($options)) {
@@ -329,7 +343,7 @@ function emailkit_list_admin_subscriber_form(&$form_state, $subscriber = NULL) {
       '#type' => 'checkboxes',
       '#title' => t('Subscriptions'),
       '#options' => $options,
-      '#default_value' => isset($subscriber) ? emailkit_list_subscriber_load_subscriptions($subscriber->sid) : array(),
+      '#default_value' => array_keys($subscriptions),
       '#description' => t('Select the lists to which the subscriber is subscribed to.'),
     );
   }
@@ -410,6 +424,7 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
   
   $subscriber = isset($form['#subscriber']) ? $form['#subscriber'] : NULL;
   $user = isset($form['#user']) ? $form['#user'] : NULL;
+  $subscriptions = isset($form['#subscriptions']) ? $form['#subscriptions'] : array();
   
   // We only need to process the address and username fields if the subscriber is not already associated with a user account
   if (!isset($user) || !$user->uid) {
@@ -432,17 +447,9 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
     }
   }
   
-  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
-
-  // If the administrator makes a significant change to the subscriptions, put the subscriber status back to unconfirmed
-  if (isset($subscriber->sid)) {
-    $current_subscriptions = emailkit_list_subscriber_load_subscriptions($subscriber->sid);
-
-    // When the subscriber was previously not subscribed to anything or vice versa, that is a significant change
-    if (empty($current_subscriptions) != empty($subscriptions)) {
-      $subscriber->confirmed = FALSE;
-    }
-  }
+  // Update the subscriptions
+  $lids = array_keys(array_filter($form_state['values']['subscriptions']));
+  $subscriptions = emailkit_list_subscriber_subscription_update_all($subscriptions, $lids);
 
   // Save the subscriber
   switch (emailkit_list_subscriber_save($subscriber)) {
@@ -460,7 +467,7 @@ function emailkit_list_admin_subscriber_form_submit($form, &$form_state) {
   }
 
   // Update the subscriptions
-  if (!emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
+  if (!emailkit_list_subscriber_subscription_save_all($subscriber->sid, $subscriptions)) {
     drupal_set_message(t('The subscriber\'s subscriptions could not be saved.'), 'warning');
   }
   
@@ -574,7 +581,6 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
   $header = array(
     array('data' => t('E-mail address'), 'field' => 'address'),
     array('data' => t('User account')),
-    array('data' => t('Status'), 'field' => 'confirmed'),
     array('data' => t('Operations'), 'colspan' => 2)
   );
   $rows = array();
@@ -585,7 +591,6 @@ function theme_emailkit_list_admin_subscriber_list_form($form) {
     $row = array();
     $row[] = check_plain($subscriber->address);
     $row[] = theme('username', $user);
-    $row[] = $subscriber->confirmed ? t('Confirmed') : t('Unconfirmed');
     $row[] = l(t('edit'), 'admin/emailkit/list/subscribers/' . $sid . '/edit', array('query' => drupal_get_destination()));
     $row[] = l(t('delete'), 'admin/emailkit/list/subscribers/' . $sid . '/delete', array('query' => drupal_get_destination()));
     $rows[] = $row;

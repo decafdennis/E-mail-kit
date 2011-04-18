@@ -107,7 +107,6 @@ function emailkit_list_delete($lid) {
 function emailkit_list_subscriber_new($address) {
   $subscriber = new stdClass();
   $subscriber->address = $address;
-  $subscriber->confirmed = FALSE;
   return $subscriber;
 }
 
@@ -161,31 +160,13 @@ function emailkit_list_subscriber_load_all($tablesort_header = NULL, $pager_limi
 }
 
 /**
- * Loads the subscriptions of the given subscriber.
- *
- * @param $sid The identifier of the subscriber.
- *
- * @return An array of list identifiers.
- */
-function emailkit_list_subscriber_load_subscriptions($sid) {
-  $lids = array();
-  
-  $result = db_query("SELECT lid FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
-  while ($lid = db_result($result)) {
-    $lids[] = $lid;
-  }
-  
-  return $lids;
-}
-
-/**
  * Saves the given subscriber to the database, inserting a new record or updating an existing record as necessary.
  *
  * @return Returns FALSE, SAVED_NEW or SAVED_UPDATED depending on whether saving was successful. Upon return, a new subscriber will automatically have an identifier assigned to it.
  */
 function emailkit_list_subscriber_save(&$subscriber) {
   if (isset($subscriber->sid)) {
-    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s', confirmed = %d WHERE sid = %d", $subscriber->address, $subscriber->confirmed, $subscriber->sid);
+    db_query("UPDATE {emailkit_list_subscriber} SET address = '%s' WHERE sid = %d", $subscriber->address, $subscriber->sid);
     
     if (db_affected_rows() == 1) {
       return SAVED_UPDATED;
@@ -195,7 +176,7 @@ function emailkit_list_subscriber_save(&$subscriber) {
     }
   }
   else {
-    db_query("INSERT INTO {emailkit_list_subscriber} (address, confirmed) VALUES ('%s', %d)", $subscriber->address, $subscriber->confirmed);
+    db_query("INSERT INTO {emailkit_list_subscriber} (address) VALUES ('%s')", $subscriber->address);
 
     if (db_affected_rows() == 1) {
       $subscriber->sid = db_last_insert_id('emailkit_list_subscriber', 'sid');
@@ -205,48 +186,6 @@ function emailkit_list_subscriber_save(&$subscriber) {
     else {
       return FALSE;
     }
-  }
-}
-
-/**
- * Saves the subscriptions of the given subscriber. 
- *
- * @param $sid The identifier of the subscriber.
- * @param $lids An array of list identifiers.
- *
- * @return A flag indicating whether saving was successful.
- */
-function emailkit_list_subscriber_save_subscriptions($sid, $lids) {
-  db_query("DELETE FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
-  
-  if (!empty($lids)) {
-    // Start constructing a compound insertion statement
-    $sql = "INSERT INTO {emailkit_list_subscription} (sid, lid) VALUES ";
-    $sql_args = array();
-    $insertions = 0;
-    
-    foreach ($lids as $lid) {
-      $sql .= "(%d, %d), ";
-      $sql_args[] = $sid;
-      $sql_args[] = $lid;
-      $insertions++;
-    }
-    
-    // Remove the final comma delimiter
-    $sql = substr($sql, 0, -2);
-    
-    db_query($sql, $sql_args);
-    
-    // Verify the number of affected rows
-    if (db_affected_rows() == $insertions) {
-      return TRUE;
-    }
-    else {
-      return FALSE;
-    }
-  }
-  else {
-    return TRUE;
   }
 }
 
@@ -265,6 +204,127 @@ function emailkit_list_subscriber_delete($sid) {
   }
   else {
     return FALSE;
+  }
+}
+
+/**
+ * Returns a new unsaved subscription with default values.
+ *
+ * @param $lid The identifier of the list.
+ *
+ * @return An unsaved subscription object.
+ */
+function emailkit_list_subscriber_subscription_new($lid) {
+  $subscription = new stdClass();
+  $subscription->lid = $lid;
+  return $subscription;
+}
+
+/**
+ * Loads the subscriptions of the given subscriber.
+ *
+ * @param $sid The identifier of the subscriber.
+ *
+ * @return An array of subscription objects keyed by list identifier.
+ */
+function emailkit_list_subscriber_subscription_load_all($sid) {
+  $subscriptions = array();
+  
+  $result = db_query("SELECT lid, confirm_date FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
+  while ($subscription = db_fetch_object($result)) {
+    $subscriptions[$subscription->lid] = $subscription;
+  }
+  
+  return $subscriptions;
+}
+
+/**
+ * Returns a new array of subscriptions objects by adding subscriptions for lists that exist in $lids but not in $subscriptions and removing subscriptions for lists that exist in $subscriptions but not in $lids.
+ *
+ * @param $subscriptions The original array of subscriptions, which does not need to be keyed by list identifier.
+ * @param $lids The array of lists that the new array of subscriptions should denote.
+ * @param $confirm_date If set, unconfirmed subscriptions will be confirmed using this confirmation date.
+ *
+ * @return An array of subscription objects keyed by list identifier.
+ */
+function emailkit_list_subscriber_subscription_update_all($subscriptions, $lids, $confirm_date = NULL) {
+  $new_subscriptions = array();
+  
+  foreach ($subscriptions as $subscription) {
+    if (in_array($subscription->lid, $lids)) {
+      if (!empty($confirm_date) && empty($subscription->confirm_date)) {
+        $subscription->confirm_date = $confirm_date;
+      }
+      
+      $new_subscriptions[$subscription->lid] = $subscription;
+    }
+  }
+  
+  foreach ($lids as $lid) {
+    if (!isset($new_subscriptions[$lid])) {
+      $subscription = emailkit_list_subscriber_subscription_new($lid);
+      
+      if (!empty($confirm_date)) {
+        $subscription->confirm_date = $confirm_date;
+      }
+      
+      $new_subscriptions[$lid] = $subscription;
+    }
+  }
+  
+  return $new_subscriptions;
+}
+
+/**
+ * Saves the subscriptions of the given subscriber. 
+ *
+ * @param $sid The identifier of the subscriber.
+ * @param $subscriptions An array of subscription objects.
+ *
+ * @return A flag indicating whether saving was successful.
+ */
+function emailkit_list_subscriber_subscription_save_all($sid, $subscriptions) {
+  db_query("DELETE FROM {emailkit_list_subscription} WHERE sid = %d", $sid);
+  
+  if (!empty($subscriptions)) {
+    // Start constructing a compound insertion statement
+    $sql = "INSERT INTO {emailkit_list_subscription} (sid, lid, confirm_date) VALUES ";
+    $sql_args = array();
+    $insertions = 0;
+    
+    $values_sql = array();
+    foreach ($subscriptions as $subscription) {
+      $subscription_values_sql = "(%d, %d, ";
+      $sql_args[] = $sid;
+      $sql_args[] = $subscription->lid;
+      
+      if (!empty($subscription->confirm_date)) {
+        $subscription_values_sql .= "%d";
+        $sql_args[] = $subscription->confirm_date;
+      }
+      else {
+        $subscription_values_sql .= "NULL";
+      }
+      
+      $subscription_values_sql .= ")";
+      $values_sql[] = $subscription_values_sql;
+      
+      $insertions++;
+    }
+    $sql .= implode(", ", $values_sql);
+
+    db_query($sql, $sql_args);
+    
+    // Verify the number of affected rows
+    if (db_affected_rows() == $insertions) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
+    return TRUE;
   }
 }
 
@@ -422,28 +482,15 @@ function emailkit_list_confirmation_page() {
     return drupal_access_denied();
   }
   
-  // Check if there is an existing subscriber
-  $subscriber = emailkit_list_subscriber_load_by_address($address);
+  // Fetch or create a subscriber
+  $subscriber = emailkit_list_subscriber_load_by_address($address, TRUE);
+  $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+
+  // Update the subscriptions, with confirmation
+  $subscriptions = emailkit_list_subscriber_subscription_update_all($subscriptions, $lids, time());
   
-  if (isset($subscriber)) {
-    if (!$subscriber->confirmed) {
-      $subscriber->confirmed = TRUE;
-      emailkit_list_subscriber_save($subscriber);
-    }
-  }
-  else {
-    // Create a new one
-    $subscriber = emailkit_list_subscriber_new($address);
-    $subscriber->confirmed = TRUE;
-    
-    // If we were unable to save the subscriber, set it to NULL so we can check this condition later
-    if (!emailkit_list_subscriber_save($subscriber)) {
-      unset($subscriber);
-    }
-  }
-  
-  // Check whether we have a subscriber and try to save the subscriptions
-  if (isset($subscriber) && emailkit_list_subscriber_save_subscriptions($subscriber->sid, $lids)) {
+  // Try to save the subscriber and its subscriptions
+  if (emailkit_list_subscriber_save($subscriber) && emailkit_list_subscriber_subscription_save_all($subscriber->sid, $subscriptions)) {
     if (empty($lids)) {
       drupal_set_message(t('You have successfully been unsubscribed.'));
     }
@@ -475,7 +522,7 @@ function emailkit_list_destination_form($destination_type) {
   $options = array();
   $lists = emailkit_list_load_all();
   foreach ($lists as $lid => $list) {
-    $options[$lid] = $list->name;
+    $options[$lid] = check_plain($list->name);
   }
 
   $form['lids'] = array(

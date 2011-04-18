@@ -38,18 +38,26 @@ function emailkit_list_block_subscriptions_form(&$form_state, $lists) {
   // Build an array of options to choose from
   $options = array();
   foreach ($lists as $lid => $list) {
-    $options[$lid] = $list->name;
+    $options[$lid] = check_plain($list->name);
   }
   
   // Try to find the subscriber for the currently logged in user
   if ($user->uid) {
     $subscriber = emailkit_list_subscriber_load_by_address($user->mail);
   }
+  
+  if (isset($subscriber)) {
+    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+  }
+  else {
+    $subscriptions = array();
+  }
 
   $form['subscriptions'] = array(
     '#type' => 'checkboxes',
     '#options' => $options,
-    '#default_value' => isset($subscriber) ? emailkit_list_subscriber_load_subscriptions($subscriber->sid) : array(),
+    '#default_value' => array_keys($subscriptions),
+    '#description' => t('Select the lists you want to be subscribed to. If you deselect all lists, you will be unsubscribed from all lists.'),
   );
 
   $form['address'] = array(
@@ -69,7 +77,7 @@ function emailkit_list_block_subscriptions_form(&$form_state, $lists) {
 
   $form['update'] = array(
     '#type' => 'submit',
-    '#value' => t('Update'),
+    '#value' => t('Update subscriptions'),
   );
   
   return $form;
@@ -92,17 +100,19 @@ function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
   
   module_load_include('inc', 'emailkit_list', 'emailkit_list');
   
-  $subscriptions = array_keys(array_filter($form_state['values']['subscriptions']));
+  $lids = array_keys(array_filter($form_state['values']['subscriptions']));
   
   // If we have a logged in user, we update the subscriptions right away
   if ($user->uid) {
-    // Create or update the subscriber
-    // Note: since a registered user has submitted this form, we count this is as a confirmed subscription
+    // Fetch or create the subscriber
     $subscriber = emailkit_list_subscriber_load_by_address($user->mail, TRUE);
-    $subscriber->confirmed = TRUE;
+    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    
+    // Update the subscriptions, with confirmation
+    $subscriptions = emailkit_list_subscriber_subscription_update_all($subscriptions, $lids, time());
 
     // Save the subscriber and their subscriptions
-    if (emailkit_list_subscriber_save($subscriber) && emailkit_list_subscriber_save_subscriptions($subscriber->sid, $subscriptions)) {
+    if (emailkit_list_subscriber_save($subscriber) && emailkit_list_subscriber_subscription_save_all($subscriber->sid, $subscriptions)) {
       drupal_set_message(t('Your subscriptions have been updated.'));
     }
     else {
@@ -112,7 +122,7 @@ function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
   // Otherwise, we send a confirmation e-mail
   else {
     // TODO: check whether this e-mail address is not already associated with a registered user and ask them to login, so that we don't have to send a confirmation e-mail?
-    if (emailkit_list_confirmation_send($form_state['values']['address'], $subscriptions)) {
+    if (emailkit_list_confirmation_send($form_state['values']['address'], $lids)) {
       drupal_set_message(t('An e-mail with a confirmation link has been sent to %address. Your subscriptions will be updated as soon as your confirmation has been received.', array('%address' => $form_state['values']['address'])));
     }
     else {
