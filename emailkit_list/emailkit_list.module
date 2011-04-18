@@ -151,6 +151,22 @@ function emailkit_list_theme() {
 }
 
 /**
+ * Implementation of hook_forms().
+ */
+function emailkit_forms($form_id, $args) {
+  $forms = array();
+
+  if (strpos($form_id, 'emailkit_list_block_subscription_') === 0) {
+    $forms[$form_id] = array(
+      'callback' => 'emailkit_list_block_subscription_form',
+    );
+  }
+
+  return $forms;
+}
+
+
+/**
  * Implementation of hook_user().
  */
 function emailkit_list_user($op, &$edit, &$user, $category = NULL) {
@@ -175,12 +191,25 @@ function emailkit_list_user($op, &$edit, &$user, $category = NULL) {
 function emailkit_list_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
+      module_load_include('inc', 'emailkit_list', 'emailkit_list');
+      
       $blocks = array();
       
+      // General subscriptions block
       $blocks['subscriptions'] = array(
         'info' => t('E-mail list subscriptions'),
-        'cache' => BLOCK_CACHE_PER_ROLE | BLOCK_CACHE_PER_PAGE,
+        'cache' => BLOCK_CACHE_PER_USER,
       );
+      
+      // List-specific subscription blocks
+      $lists = emailkit_list_load_all();
+
+      foreach ($lists as $lid => $list) {
+        $blocks['subscription_' . $lid] = array(
+          'info' => t('E-mail list subscription: !list-name', array('!list-name' => $list->name)),
+          'cache' => BLOCK_CACHE_PER_USER,
+        );
+      }
       
       return $blocks;
       
@@ -188,7 +217,21 @@ function emailkit_list_block($op = 'list', $delta = 0, $edit = array()) {
       // Include the appropriate file and pass on the message, to keep the main module file lean
       module_load_include('inc', 'emailkit_list', 'emailkit_list.block');
       
-      return emailkit_list_block_subscriptions_view();
+      if ($delta == 'subscriptions') {
+        return emailkit_list_block_subscriptions_view();
+      }
+      else if (strpos($delta, 'subscription_') === 0 && preg_match('/^subscription_(\d+)$/', $delta, $match)) {
+        module_load_include('inc', 'emailkit_list', 'emailkit_list');
+        
+        $lid = $match[1];
+        $list = emailkit_list_load($lid);
+        
+        if (!empty($list)) {
+          return emailkit_list_block_subscription_view($list);
+        }
+      }
+      
+      return;
   }
 }
 

@@ -358,12 +358,15 @@ function emailkit_list_user_load_by_address($address, $null = FALSE) {
  * Sends a message to the given address that contains a link to confirm subscription to the given lists.
  *
  * @param $address A subscriber's e-mail address.
+ * @param $action The action to confirm. One of update_all, subscribe, unsubscribe.
  * @param $lids An array of list identifiers.
  *
  * @return A flag indicating whether the message was sent successfully.
  */
-function emailkit_list_confirmation_send($address, $lids) {
-  $message = emailkit_message('emailkit_list_confirmation', $address, $lids);
+function emailkit_list_confirmation_send($address, $action, $lids) {
+  assert(in_array($action, array('update_all', 'subscribe', 'unsubscribe')));
+  
+  $message = emailkit_message('emailkit_list_confirmation', $address, $action, $lids);
 
   $destination = array(
     '#type' => 'emailkit_default',
@@ -380,26 +383,39 @@ function emailkit_list_confirmation_send($address, $lids) {
 /**
  * Implementation of hook_message() for the emailkit_list_confirmation message.
  */
-function emailkit_list_confirmation_message($message_id, $address, $lids) {
+function emailkit_list_confirmation_message($message_id, $address, $action, $lids) {
   $message = array(
     '#subject' => t('Confirm your subscriptions'),
   );
-  
-  if (empty($lids)) {
-    $message['content']['subscription_info'] = array(
-      '#value' => '<p>' . t('You have requested to be unsubscribed.') . '</p>',
-    );
-  }
-  else {
-    $items = array();
-    $lists = emailkit_list_load_all();
-    foreach ($lids as $lid) {
-      $items[] = $lists[$lid]->name;
-    }
-    
+
+  $show_items = FALSE;
+
+  if ($action == 'subscribe' || ($action == 'update_all' && !empty($lids))) {
     $message['content']['subscription_info'] = array(
       '#value' => '<p>' . t('You have requested to be subscribed to the following lists:') . '</p>',
     );
+    
+    $show_items = TRUE;
+  }
+  else if ($action == 'unsubscribe') {
+    $message['content']['subscription_info'] = array(
+      '#value' => '<p>' . t('You have requested to be unsubscribed from the following lists:') . '</p>',
+    );
+    
+    $show_items = TRUE;
+  }
+  else {
+    $message['content']['subscription_info'] = array(
+      '#value' => '<p>' . t('You have requested to be unsubscribed from all lists.') . '</p>',
+    );
+  }
+
+  if ($show_items) {
+    $items = array();
+    $lists = emailkit_list_load_all();
+    foreach ($lids as $lid) {
+      $items[] = check_plain($lists[$lid]->name);
+    }
     
     $message['content']['subscription_list'] = array(
       '#value' => theme('item_list', $items),
@@ -407,7 +423,7 @@ function emailkit_list_confirmation_message($message_id, $address, $lids) {
   }
   
   $message['content']['confirmation_link'] = array(
-    '#value' => '<p>' . l(t('Confirm your subscriptions'), emailkit_list_confirmation_url($address, $lids)) . '</p>',
+    '#value' => '<p>' . l(t('Confirm your subscriptions'), emailkit_list_confirmation_url($address, $action, $lids)) . '</p>',
   );
 
   $rationale_replacements = array(
@@ -430,13 +446,14 @@ function emailkit_list_confirmation_message($message_id, $address, $lids) {
  *
  * @return An absolute URL.
  */
-function emailkit_list_confirmation_url($address, $lids) {
+function emailkit_list_confirmation_url($address, $action, $lids) {
   $timestamp = time();
 
   $query = array(
     'address' => $address,
+    'action' => $action,
     'timestamp' => $timestamp,
-    'hash' => emailkit_list_confirmation_hash($address, $lids, $timestamp),
+    'hash' => emailkit_list_confirmation_hash($address, $action, $lids, $timestamp),
   );
 
   // Empty arrays don't translate well into query strings
@@ -454,6 +471,12 @@ function emailkit_list_confirmation_page() {
   // Get the address and ensure it is a valid e-mail address
   $address = $_GET['address'];
   if (!valid_email_address($address)) {
+    return drupal_access_denied();
+  }
+  
+  // Get the action and ensure it is valid
+  $action = $_GET['action'];
+  if (!in_array($action, array('update_all', 'subscribe', 'unsubscribe'))) {
     return drupal_access_denied();
   }
   
@@ -478,13 +501,20 @@ function emailkit_list_confirmation_page() {
   
   // Get the hash and check whether it is valid, so that we know the URL has not been altered
   $hash = $_GET['hash'];
-  if ($hash != emailkit_list_confirmation_hash($address, $lids, $timestamp)) {
+  if ($hash != emailkit_list_confirmation_hash($address, $action, $lids, $timestamp)) {
     return drupal_access_denied();
   }
   
   // Fetch or create a subscriber
   $subscriber = emailkit_list_subscriber_load_by_address($address, TRUE);
   $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+
+  if ($action == 'subscribe') {
+    $lids = array_merge($lids, array_keys($subscriptions));
+  }
+  else if ($action == 'unsubscribe') {
+    $lids = array_diff(array_keys($subscriptions), $lids);
+  }
 
   // Update the subscriptions, with confirmation
   $subscriptions = emailkit_list_subscriber_subscription_update_all($subscriptions, $lids, time());
@@ -508,8 +538,8 @@ function emailkit_list_confirmation_page() {
 /**
  * Generates a salted hash based on the given parameters. Since the salt is secret, we can be relatively sure we are the only ones that can generate this hash.
  */
-function emailkit_list_confirmation_hash($address, $lids, $timestamp) {
-  return md5($address . implode(',', $lids) . $timestamp . drupal_get_private_key());
+function emailkit_list_confirmation_hash($address, $action, $lids, $timestamp) {
+  return md5($address . $action . '|' . implode('|', $lids) . '|' . $timestamp . drupal_get_private_key());
 }
 
 /**
