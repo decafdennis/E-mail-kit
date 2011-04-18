@@ -172,13 +172,16 @@ function emailkit_list_block_subscription_form(&$form_state, $list) {
   // Try to find the subscriber for the currently logged in user
   if ($user->uid) {
     $subscriber = emailkit_list_subscriber_load_by_address($user->mail);
+    
+    // Try to load the user's subscriptions
+    if (isset($subscriber)) {
+      $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    }
+    else {
+      $subscriptions = array();
+    }
   }
-  
-  // Try to load the user's subscriptions
-  if (isset($subscriber)) {
-    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
-  }
-  
+
   // Show an unsubscribe button when the user is subscribed or when we don't know
   if (!isset($subscriptions) || isset($subscriptions[$list->lid])) {
     $form['unsubscribe'] = array(
