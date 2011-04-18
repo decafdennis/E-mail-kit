@@ -508,7 +508,13 @@ function emailkit_list_confirmation_page() {
   
   // Fetch or create a subscriber
   $subscriber = emailkit_list_subscriber_load_by_address($address, TRUE);
-  $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+  
+  if (isset($subscriber->sid)) {
+    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+  }
+  else {
+    $subscriptions = array();
+  }
 
   if ($action == 'subscribe') {
     $lids = array_merge($lids, array_keys($subscriptions));

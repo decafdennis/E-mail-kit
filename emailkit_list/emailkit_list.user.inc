@@ -67,8 +67,14 @@ function emailkit_list_user_form_submit($user, &$values) {
     // Fetch or create the subscriber
     // Note: make sure to use the new e-mail address to find the subscriber ($user->mail has the old e-mail address)
     $subscriber = emailkit_list_subscriber_load_by_address($values['mail'], TRUE);
-    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
     
+    if (isset($subscriber->sid)) {
+      $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    }
+    else {
+      $subscriptions = array();
+    }
+
     // Update the subscriptions, with confirmation
     $lids = array_keys(array_filter($values['emailkit_list_subscriptions']['subscriptions']));
     $subscriptions = emailkit_list_subscriber_subscription_update_all($subscriptions, $lids, time());

@@ -106,7 +106,13 @@ function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
   if ($user->uid) {
     // Fetch or create the subscriber
     $subscriber = emailkit_list_subscriber_load_by_address($user->mail, TRUE);
-    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    
+    if (isset($subscriber->sid)) {
+      $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    }
+    else {
+      $subscriptions = array();
+    }
     
     // Update the subscriptions, with confirmation
     $subscriptions = emailkit_list_subscriber_subscription_update_all($subscriptions, $lids, time());
@@ -244,7 +250,13 @@ function emailkit_list_block_subscription_form_submit($form, &$form_state) {
   if ($user->uid) {
     // Fetch or create the subscriber
     $subscriber = emailkit_list_subscriber_load_by_address($user->mail, TRUE);
-    $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    
+    if (isset($subscriber->sid)) {
+      $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    }
+    else {
+      $subscriptions = array();
+    }
     
     // Update the subscriptions, with confirmation
     if ($subscribe) {
