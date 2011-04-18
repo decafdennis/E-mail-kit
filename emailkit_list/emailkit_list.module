@@ -161,7 +161,7 @@ function emailkit_list_theme() {
 /**
  * Implementation of hook_forms().
  */
-function emailkit_forms($form_id, $args) {
+function emailkit_list_forms($form_id, $args) {
   $forms = array();
 
   if (strpos($form_id, 'emailkit_list_block_subscription_') === 0) {
