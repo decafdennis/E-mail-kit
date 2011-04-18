@@ -147,6 +147,14 @@ function emailkit_list_theme() {
     'file' => 'emailkit_list.admin.inc',
   );
   
+  // Theming for the list-specific subscription block content
+  $theme['emailkit_list_block_subscription_content'] = array(
+    'arguments' => array(
+      'elements' => array(),
+    ),
+    'file' => 'emailkit_list.block.inc',
+  );
+  
   return $theme;
 }
 

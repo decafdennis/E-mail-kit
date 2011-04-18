@@ -113,6 +113,13 @@ function emailkit_list_admin_form(&$form_state, $list = NULL) {
     '#required' => TRUE,
   );
   
+  $form['description'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#description' => t('A brief description of the list. This text will be displayed to the user, as part of the subscription blocks, for example. This text may contain HTML. In fact, you should use HTML if you want to include multiple paragraphs of text.'),
+    '#default_value' => isset($list) ? $list->description : "",
+  );
+  
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
@@ -135,8 +142,9 @@ function emailkit_list_admin_form_submit($form, &$form_state) {
     $list = emailkit_list_new();
   }
   
-  // Update the name
+  // Update the name and description
   $list->name = $form_state['values']['name'];
+  $list->description = $form_state['values']['description'];
   
   // Save the list
   switch (emailkit_list_save($list)) {

@@ -36,6 +36,12 @@ function emailkit_list_schema() {
         'length' => 255,
         'not null' => TRUE,
       ),
+      'description' => array(
+        'description' => 'The list description. If empty, there is no description.',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
       'weight' => array(
         'description' => 'The list weight.',
         'type' => 'int',

@@ -136,10 +136,23 @@ function emailkit_list_block_subscriptions_form_submit($form, &$form_state) {
  */
 function emailkit_list_block_subscription_view($list) {
   module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
+  $content = array(
+    '#theme' => 'emailkit_list_block_subscription_content',
+  );
+  
+  $content['description'] = array(
+    '#value' => $list->description,
+    '#weight' => -1,
+  );
+  
+  $content['form'] = array(
+    '#value' => drupal_get_form('emailkit_list_block_subscription_' . $list->lid . '_form', $list),
+  );
 
   return array(
     'subject' => check_plain($list->name),
-    'content' => drupal_get_form('emailkit_list_block_subscription_' . $list->lid . '_form', $list),
+    'content' => drupal_render($content),
   );
 }
 
@@ -265,4 +278,20 @@ function emailkit_list_block_subscription_form_submit($form, &$form_state) {
       drupal_set_message(t('Your subscriptions could not be updated.'), 'error');
     }
   }
+}
+
+/**
+ * Renders the content of a subscription block of a specific list.
+ */
+function theme_emailkit_list_block_subscription_content($elements) {
+  $output = "";
+
+  $description_output = drupal_render($elements['description']);
+  if (!empty($description_output)) {
+    $output .= "<div class=\"emailkit-list-description\">" . $description_output . "</div>";
+  }
+
+  $output .= drupal_render($elements);
+
+  return $output;
 }

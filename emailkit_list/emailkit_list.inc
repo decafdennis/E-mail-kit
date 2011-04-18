@@ -11,6 +11,7 @@
 function emailkit_list_new() {
   $list = new stdClass();
   $list->name = "";
+  $list->description = "";
   $list->weight = 0;
   return $list;
 }
@@ -56,7 +57,7 @@ function emailkit_list_load_subscribers($lid) {
  */
 function emailkit_list_save(&$list) {
   if (isset($list->lid)) {
-    db_query("UPDATE {emailkit_list} SET name = '%s', weight = %d WHERE lid = %d", $list->name, $list->weight, $list->lid);
+    db_query("UPDATE {emailkit_list} SET name = '%s', description = '%s', weight = %d WHERE lid = %d", $list->name, $list->description, $list->weight, $list->lid);
     
     if (db_affected_rows() == 1) {
       return SAVED_UPDATED;
@@ -66,7 +67,7 @@ function emailkit_list_save(&$list) {
     }
   }
   else {
-    db_query("INSERT INTO {emailkit_list} (name, weight) VALUES ('%s', %d)", $list->name, $list->weight);
+    db_query("INSERT INTO {emailkit_list} (name, description, weight) VALUES ('%s', '%s', %d)", $list->name, $list->description, $list->weight);
 
     if (db_affected_rows() == 1) {
       $list->lid = db_last_insert_id('emailkit_list', 'lid');
