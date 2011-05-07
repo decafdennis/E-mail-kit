@@ -458,6 +458,20 @@ function emailkit_send($message, $destination) {
 }
 
 /**
+ * Returns the address that should be used for the Return-Path header in outgoing e-mail messages.
+ */
+function emailkit_return_address() {
+  $return_address = variable_get('emailkit_return_address', NULL);
+  
+  if (empty($return_address)) {
+    return NULL;
+  }
+  else {
+    return $return_address;
+  }
+}
+
+/**
  * Sends the given message to the destination given by the emailkit_destination_select element value.
  *
  * @param $element_value The value of an emailkit_destination_select element.

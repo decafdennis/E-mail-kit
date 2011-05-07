@@ -534,6 +534,8 @@ function _emailkit_mime_quoted_printable($input) {
  * @return A flag indicating whether sending was successful.
  */
 function _emailkit_mail($to, $subject, $body, $headers = array()) {
+  $sendmail_args = array();
+  
   // Prepare the subject
   $subject = mime_header_encode($subject);
 
@@ -546,6 +548,15 @@ function _emailkit_mail($to, $subject, $body, $headers = array()) {
     $headers['X-Mailer'] = 'E-mail kit (Drupal)';
   }
   
+  if (!isset($headers['Return-Path'])) {
+    $return_address = emailkit_return_address();
+    
+    if (!empty($return_address)) {
+      $headers['Return-Path'] = '<' . $return_address . '>';
+      $sendmail_args[] = '-f ' . $return_address;
+    }
+  }
+
   $headers_encoded = array();
   foreach ($headers as $key => $value) {
     $headers_encoded[] = $key . ': ' . mime_header_encode($value);
@@ -554,7 +565,7 @@ function _emailkit_mail($to, $subject, $body, $headers = array()) {
   // Note: follow drupal_mail_send()'s recommendation of using LF
   $headers = implode("\n", $headers_encoded);
   
-  $success = mail($to, $subject, $body, $headers);
+  $success = mail($to, $subject, $body, $headers, implode(' ', $sendmail_args));
   
   if (!$success) {
     $details = array(

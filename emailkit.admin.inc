@@ -21,9 +21,16 @@ function emailkit_admin_settings_form() {
 
   $form['drupal_mail_wrapper_status'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Use E-mail kit to send all site messages'),
+    '#title' => t('Use <em>E-mail kit</em> to send all site messages'),
     '#description' => t('If you enable this option, all site messages will be sent through E-mail kit. This way, all site messages will be sent as HTML and get the same appearance.'),
     '#default_value' => (variable_get('smtp_library', '') == _emailkit_smtp_library_path()),
+  );
+  
+  $form['return_address'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Return e-mail address'),
+    '#description' => t('The e-mail address that should be used for the <code>Return-Path</code> header in e-mail messages sent using the default PHP dispatcher. This is the e-mail address that will receive <em>bounce messages</em> (or, more formally, <em>non-delivery reports</em>) indicating delivery of a message has failed. Leave empty to use a default address.'),
+    '#default_value' => emailkit_return_address(),
   );
   
   $form['submit'] = array(
@@ -32,6 +39,15 @@ function emailkit_admin_settings_form() {
   );
   
   return $form;
+}
+
+/**
+ * Handles validation of the admin settings form.
+ */
+function emailkit_admin_settings_form_validate($form, &$form_state) {
+  if (!empty($form_state['values']['return_address']) && !valid_email_address($form_state['values']['return_address'])) {
+    form_set_error('mail', t('The entered return address is not a valid e-mail address.'));
+  }
 }
 
 /**
@@ -55,6 +71,15 @@ function emailkit_admin_settings_form_submit($form, &$form_state) {
       drupal_set_message(t('E-mail kit will now be used to send all site messages.'));
     }
   }
+  
+  if (empty($form_state['values']['return_address'])) {
+    variable_set('emailkit_return_address', NULL);
+  }
+  else {
+    variable_set('emailkit_return_address', $form_state['values']['return_address']);
+  }
+  
+  drupal_set_message(t('The configuration options have been saved.'));
 }
 
 /**
