@@ -315,6 +315,41 @@ function emailkit_list_emailkit_message_info() {
   return $info;
 }
 
+function emailkit_list_emailkit_message_before_send(&$message, &$destination) {
+  if ($destination['#type'] == 'emailkit_list' && !isset($message['footer']['rationale'])) {
+    $list_names = array();
+    $lids = $destination['#lids'];
+    
+    foreach ($lids as $lid) {
+      $list = emailkit_list_load($lid);
+      
+      if (isset($list)) {
+        $list_names[] = $list->name;
+      }
+    }
+
+    // Compose a rationale for this message
+    $rationale = NULL;
+
+    if (empty($list_names)) {
+      // For some odd reason we don't know to which list this is being sent
+      $rationale = t('You are receiving this message because you are subscribed to one of our e-mail lists');
+    }
+    else {
+      $list_name = array_pop($list_names);
+      $rationale = t('You are receiving this message because you are subscribed to the %list-name e-mail list.', array('%list-name' => $list_name));
+    }
+    
+    // Add instructions for updating a subscriber's subscriptions
+    $rationale .= ' ';
+    $rationale .= t('You can <a href="@subscriptions-url">unsubscribe or update your subscriptions</a> at our site.', array('@subscriptions-url' => url('emailkit/list/subscriber', array('absolute' => TRUE))));
+    
+    $message['footer']['rationale'] = array(
+      '#value' => $rationale,
+    );
+  }
+}
+
 /**
  * Loads the list with the given identifier from the database.
  *
