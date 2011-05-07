@@ -18,9 +18,6 @@ function emailkit_list_perm() {
   // Permissions for adding, editing and deleting subscribers
   $perm[] = 'administer subscribers';
   
-  // Permissions for regular users
-  $perm[] = 'edit own subscriptions';
-  
   return $perm;
 }
 
@@ -29,6 +26,20 @@ function emailkit_list_perm() {
  */
 function emailkit_list_menu() {
   $items = array();
+  
+  // Menu items for updating a subscriber's e-mail address or subscriptions
+  $items['emailkit/list/subscriber'] = array(
+    'title' => 'Subscriber',
+    'page callback' => 'emailkit_list_subscriber_subscriptions_page',
+    'access callback' => 1,
+    'file' => 'emailkit_list.pages.inc',
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+  $items['emailkit/list/subscriber/subscriptions'] = array(
+    'title' => 'Subscriptions',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
   
   // Menu item for confirming subscription updates
   $items['emailkit/list/confirm'] = array(
@@ -118,7 +129,18 @@ function emailkit_list_menu() {
  * Implementation of hook_help().
  */
 function emailkit_list_help($path, $arg) {
+  global $user;
+  
   switch ($path) {
+    case 'emailkit/list/subscriber':
+    case 'emailkit/list/subscriber/subscriptions':
+      if (!empty($user->uid)) {
+        return t('<p>You can use the form below to update your subscriptions.');
+      }
+      else {
+        return t('<p>You can use the form below to update your subscriptions. If you have an account on our site, you may also <a href="@login-url">log in</a> to update your subscriptions.</p>', array('@login-url' => url('user', array('query' => drupal_get_destination()))));
+      }
+
     case 'admin/emailkit/list/subscribers/add':
     case 'admin/emailkit/list/subscribers/%/edit':
       return t('<p>Either a valid e-mail address or the name of an existing user account is required. If you enter a username, the e-mail address will be determined automatically.</p>');
@@ -178,8 +200,13 @@ function emailkit_list_forms($form_id, $args) {
  * Implementation of hook_user().
  */
 function emailkit_list_user($op, &$edit, &$user, $category = NULL) {
-  if (!(user_access('edit own subscriptions') || user_access('administer subscriptions'))) {
-    return;
+  // For certain operations, check subscriptions access
+  if ($op == 'form' || $op == 'update') {
+    $active_user = $GLOBALS['user'];
+
+    if ($user->uid != $active_user->uid && !user_access('administer subscriptions')) {
+      return;
+    }
   }
   
   module_load_include('inc', 'emailkit_list', 'emailkit_list.user');
