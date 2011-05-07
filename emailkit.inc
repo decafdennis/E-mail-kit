@@ -25,8 +25,12 @@ function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
   
   // Process the destination
   if ($destination['#type'] == 'emailkit_default') {
+    // Do we have someplace to send the message to?
+    if (empty($destination['#recipients'])) {
+      return TRUE;
+    }
     // If there are multiple recipients and either version of the body appears to contain recipient tokens, we need to multiplex to individual recipients
-    if (count($destination['#recipients']) > 1 && (preg_match(EMAILKIT_RECIPIENT_TOKEN_PATTERN, $text) || preg_match(EMAILKIT_RECIPIENT_TOKEN_PATTERN, $html))) {
+    else if (count($destination['#recipients']) > 1 && (preg_match(EMAILKIT_RECIPIENT_TOKEN_PATTERN, $text) || preg_match(EMAILKIT_RECIPIENT_TOKEN_PATTERN, $html))) {
       $success = TRUE;
 
       foreach ($destination['#recipients'] as $recipient) {
@@ -549,6 +553,19 @@ function _emailkit_mail($to, $subject, $body, $headers = array()) {
 
   // Note: follow drupal_mail_send()'s recommendation of using LF
   $headers = implode("\n", $headers_encoded);
-
-  return mail($to, $subject, $body, $headers);
+  
+  $success = mail($to, $subject, $body, $headers);
+  
+  if (!$success) {
+    $details = array(
+      'to' => $to,
+      'subject' => $subject,
+      'body' => $body,
+      'headers' => $headers,
+    );
+    
+    watchdog('emailkit', 'A message could not be accepted for delivery:\n%details', array('%details' => var_export($details, TRUE)), WATCHDOG_WARNING);
+  }
+  
+  return $success;
 }
