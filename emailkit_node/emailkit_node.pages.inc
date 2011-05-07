@@ -45,10 +45,10 @@ function emailkit_node_send_form_submit($form, &$form_state) {
 
   // Send the message
   if (emailkit_destination_select_send($message, $form_state['values']['dest'])) {
-    drupal_set_message(t('E-mail was sent successfully.'));
+    drupal_set_message(t('The message was sent successfully.'));
   }
   else {
-    drupal_set_message(t('Failed to send e-mail.'), 'error');
+    drupal_set_message(t('The message could not be sent.'), 'error');
   }
 }
 
