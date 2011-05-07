@@ -271,6 +271,15 @@ function emailkit_list_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 /**
+ * Implementation of hook_views_api().
+ */
+function emailkit_list_views_api() {
+  return array(
+    'api' => 2,
+  );
+}
+
+/**
  * Implementation of hook_emailkit_destination_info().
  */
 function emailkit_list_emailkit_destination_info() {
