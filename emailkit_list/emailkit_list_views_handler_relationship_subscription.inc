@@ -1,7 +1,7 @@
 <?php
 // Developed by Dennis Stevense for Digital Deployment
 
-class views_handler_relationship_emailkit_list_subscription extends views_handler_relationship  {
+class emailkit_list_views_handler_relationship_subscription extends views_handler_relationship  {
 
   function query() {
     $this->ensure_my_table();

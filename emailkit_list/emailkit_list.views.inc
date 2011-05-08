@@ -94,7 +94,7 @@ function emailkit_list_views_data() {
       'title' => t('Subscribers'),
       'help' => t('The subscribers who are subscribed to the list.'),
       'relationship' => array(
-        'handler' => 'views_handler_relationship_emailkit_list_subscription',
+        'handler' => 'emailkit_list_views_handler_relationship_subscription',
         'label' => t('subscriber'),
         'base' => 'emailkit_list_subscriber',
       ),
@@ -167,7 +167,7 @@ function emailkit_list_views_data() {
       'title' => t('Lists'),
       'help' => t('The lists which the subscriber is subscribed to.'),
       'relationship' => array(
-        'handler' => 'views_handler_relationship_emailkit_list_subscription',
+        'handler' => 'emailkit_list_views_handler_relationship_subscription',
         'label' => t('list'),
         'base' => 'emailkit_list',
       ),
@@ -229,7 +229,7 @@ function emailkit_list_views_data_alter(&$data) {
 function emailkit_list_views_handlers() {
   return array(
     'handlers' => array(
-      'views_handler_relationship_emailkit_list_subscription' => array(
+      'emailkit_list_views_handler_relationship_subscription' => array(
         'parent' => 'views_handler_relationship',
       ),
     ),
