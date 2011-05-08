@@ -90,6 +90,20 @@ function emailkit_list_views_data() {
         'handler' => 'views_handler_filter_numeric',
       ),
     ),
+    'edit_link' => array(
+      'title' => t('Edit link'),
+      'help' => t('Provides a link to edit the e-mail list.'),
+      'field' => array(
+        'handler' => 'emailkit_list_views_handler_field_link_list_edit',
+      ),
+    ),
+    'delete_link' => array(
+      'title' => t('Delete link'),
+      'help' => t('Provides a link to delete the e-mail list.'),
+      'field' => array(
+        'handler' => 'emailkit_list_views_handler_field_link_list_delete',
+      ),
+    ),
     'sid' => array(
       'title' => t('Subscribers'),
       'help' => t('The subscribers who are subscribed to the list.'),
@@ -103,7 +117,7 @@ function emailkit_list_views_data() {
   
   $data['emailkit_list_subscriber'] = array(
     'table' => array(
-      'group' => t('E-mail list'),
+      'group' => t('E-mail list subscriber'),
       'base' => array(
         'field' => 'sid',
         'title' => t('E-mail list subscriber'),
@@ -161,6 +175,20 @@ function emailkit_list_views_data() {
         'label' => t('user'),
         'base' => 'users',
         'base field' => 'mail',
+      ),
+    ),
+    'edit_link' => array(
+      'title' => t('Edit link'),
+      'help' => t('Provides a link to edit the subscriber.'),
+      'field' => array(
+        'handler' => 'emailkit_list_views_handler_field_link_subscriber_edit',
+      ),
+    ),
+    'delete_link' => array(
+      'title' => t('Delete link'),
+      'help' => t('Provides a link to delete the subscriber.'),
+      'field' => array(
+        'handler' => 'emailkit_list_views_handler_field_link_subscriber_delete',
       ),
     ),
     'lid' => array(
@@ -229,6 +257,21 @@ function emailkit_list_views_data_alter(&$data) {
 function emailkit_list_views_handlers() {
   return array(
     'handlers' => array(
+      'emailkit_list_views_handler_field_link' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'emailkit_list_views_handler_field_link_list_edit' => array(
+        'parent' => 'emailkit_list_views_handler_field_link',
+      ),
+      'emailkit_list_views_handler_field_link_list_delete' => array(
+        'parent' => 'emailkit_list_views_handler_field_link',
+      ),
+      'emailkit_list_views_handler_field_link_subscriber_edit' => array(
+        'parent' => 'emailkit_list_views_handler_field_link',
+      ),
+      'emailkit_list_views_handler_field_link_subscriber_delete' => array(
+        'parent' => 'emailkit_list_views_handler_field_link',
+      ),
       'emailkit_list_views_handler_relationship_subscription' => array(
         'parent' => 'views_handler_relationship',
       ),
