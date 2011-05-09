@@ -2,5 +2,5 @@
 name = Test
 description = For testing purposes only.
 package = E-mail kit
-version = 6.x-1.x-dev
+version = 6.x-1.x-alpha1
 core = 6.x

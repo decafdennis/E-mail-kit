@@ -2,7 +2,7 @@
 name = Premailer
 description = Uses the Premailer Ruby gem to prepare HTML for sending.
 package = E-mail kit
-version = 6.x-1.x-dev
+version = 6.x-1.x-alpha1
 core = 6.x
 
 dependencies[] = emailkit
