@@ -561,15 +561,24 @@ function emailkit_list_destination_form($destination_type) {
   foreach ($lists as $lid => $list) {
     $options[$lid] = check_plain($list->name);
   }
-
-  $form['lids'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Lists'),
-    '#options' => $options,
-    '#default_value' => array(),
-    '#description' => t('Select one or more lists to which to send the e-mail. If a subscriber is subscribed to more than one of the selected lists, then he/she will receive just a single e-mail.'),
-    '#required' => TRUE,
-  );
+  
+  if (empty($options)) {
+    $form['lids'] = array(
+      '#type' => 'item',
+      '#title' => t('Lists'),
+      '#value' => t('No e-mail lists available.'),
+    );
+  }
+  else {
+    $form['lids'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Lists'),
+      '#options' => $options,
+      '#default_value' => array(),
+      '#description' => t('Select one or more lists to which to send the e-mail. If a subscriber is subscribed to more than one of the selected lists, then he/she will receive just a single e-mail.'),
+      '#required' => TRUE,
+    );
+  }
   
   return $form;
 }

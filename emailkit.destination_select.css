@@ -16,6 +16,14 @@ dl.emailkit-destination-select-items dd {
   margin: 1em 0 2em 2em;
 }
 
+dl.emailkit-destination-select-items dd label {
+  display: none;
+}
+
+dl.emailkit-destination-select-items dd .form-radios label, dl.emailkit-destination-select-items dd .form-checkboxes label {
+  display: block;
+}
+
 html.js dl.emailkit-destination-select-items dt {
   /* Reduce bottom margin, since a lot of spacing is introduced by a definition element below */
   margin-bottom: 0;
