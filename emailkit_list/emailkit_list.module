@@ -121,6 +121,13 @@ function emailkit_list_menu() {
     'file' => 'emailkit_list.admin.inc',
     'type' => MENU_CALLBACK,
   );
+  $items['admin/emailkit/list/subscribers/import'] = array(
+    'title' => 'Import',
+    'page callback' => 'emailkit_list_admin_subscriber_import',
+    'access arguments' => array('administer subscribers'),
+    'file' => 'emailkit_list.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
   
   return $items;
 }
@@ -144,6 +151,9 @@ function emailkit_list_help($path, $arg) {
     case 'admin/emailkit/list/subscribers/add':
     case 'admin/emailkit/list/subscribers/%/edit':
       return t('<p>Either a valid e-mail address or the name of an existing user account is required. If you enter a username, the e-mail address will be determined automatically.</p>');
+      
+    case 'admin/emailkit/list/subscribers/import':
+      return t('<p>You can use the form below to add many subscribers at once.</p>');
   }
 }
 

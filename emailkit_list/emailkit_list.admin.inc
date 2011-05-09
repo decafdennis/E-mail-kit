@@ -525,6 +525,141 @@ function emailkit_list_admin_subscriber_delete_confirm_form_submit($form, &$form
 }
 
 /**
+ * Returns the admin page for importing subscribers.
+ */
+function emailkit_list_admin_subscriber_import() {
+  return drupal_get_form('emailkit_list_admin_subscriber_import_form');
+}
+
+/**
+ * Returns the form for importing subscribers.
+ */
+function emailkit_list_admin_subscriber_import_form(&$form_state) {
+  module_load_include('inc', 'emailkit_list', 'emailkit_list');
+  
+  $form = array();
+
+  $form['addresses'] = array(
+    '#type' => 'textarea',
+    '#title' => t('E-mail addresses'),
+    '#description' => t('The e-mail addresses of the subscribers you want to add or update. The e-mail addresses must be separated by commas or by whitespace.'),
+    '#required' => TRUE,
+  );
+
+  $options = array();
+  $lists = emailkit_list_load_all();
+  foreach ($lists as $lid => $list) {
+    $options[$lid] = check_plain($list->name);
+  }
+
+  $form['subscriptions'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Subscriptions'),
+    '#options' => $options,
+    '#description' => t('The lists to which the subscribers must be subscribed to.'),
+  );
+  
+  $form['confirm'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Mark new subscriptions as confirmed'),
+    '#description' => t('Whether any new subscriptions should be marked as being confirmed at the date of the import. Only check this box if the subscribers have previously confirmed their subscriptions.'),
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Import subscribers'),
+  );
+
+  return $form;
+}
+
+/**
+ * Validates the form for importing subscribers.
+ */
+function emailkit_list_admin_subscriber_import_form_validate($form, &$form_state) {
+  if (!empty($form_state['values']['addresses'])) {
+    $addresses_data = $form_state['values']['addresses'];
+    $addresses = preg_split('/[\s,]+/', $addresses_data, NULL, PREG_SPLIT_NO_EMPTY);
+    
+    if (empty($addresses)) {
+      form_error($form['addresses'], t('The data does not contain any e-mail addresses.'));
+    }
+    else {
+      foreach ($addresses as $address) {
+        if (!valid_email_address($address)) {
+          form_error($form['addresses'], t('The data contains an invalid e-mail address: %address', array('%address' => $address)));
+        }
+      }
+    }
+
+    if (!form_get_error($form['addresses'])) {
+      $form_state['emailkit_list_addresses'] = $addresses;
+    }
+  }
+}
+
+/**
+ * Submits the form for importing subscribers.
+ */
+function emailkit_list_admin_subscriber_import_form_submit($form, &$form_state) {
+  assert(!empty($form_state['emailkit_list_addresses']));
+
+  $addresses = $form_state['emailkit_list_addresses'];
+  $lids = array_keys(array_filter($form_state['values']['subscriptions']));
+  $confirm_date = empty($form_state['values']['confirm']) ? NULL : time();
+
+  $success = TRUE;
+
+  foreach ($addresses as $address) {
+    // Fetch or create the subscriber that belongs to this address
+    $subscriber = emailkit_list_subscriber_load_by_address($address, TRUE);
+    
+    // Load the subscriber's subscriptions
+    if (empty($subscriber->sid)) {
+      $subscriptions = array();
+    }
+    else {
+      $subscriptions = emailkit_list_subscriber_subscription_load_all($subscriber->sid);
+    }
+    
+    // Update the subscriptions
+    foreach ($lids as $lid) {
+      if (isset($subscriptions[$lid])) {
+        $subscription = $subscriptions[$lid];
+      }
+      else {
+        $subscription = emailkit_list_subscriber_subscription_new($lid);
+      }
+      
+      if (!empty($confirm_date) && empty($subscription->confirm_date)) {
+        $subscription->confirm_date = $confirm_date;
+      }
+      
+      $subscriptions[$lid] = $subscription;
+    }
+    
+    // Save the subscriber
+    $result = emailkit_list_subscriber_save($subscriber);
+    $success = $success && ($result == SAVED_NEW || $result == SAVED_UPDATED);
+
+    // Save the subscriptions
+    $success = $success && emailkit_list_subscriber_subscription_save_all($subscriber->sid, $subscriptions);
+    
+    // Abort if an error has occured
+    if (!$success) {
+      break;
+    }
+  }
+  
+  if ($success) {
+    drupal_set_message(t('The subscribers have been imported successfully.'));
+  }
+  else {
+    drupal_set_message(t('The import process was aborted due to an error.'), 'error');
+  }
+}
+
+/**
  * Returns the rendered the e-mail lists admin form.
  *
  * @param $form The e-mail lists admin form.
