@@ -2,7 +2,7 @@
 name = List
 description = Allows e-mail lists to be defined and allows users to subscribe to them.
 package = E-mail kit
-version = 6.x-1.x-alpha1
+version = 6.x-1.x-dev
 core = 6.x
 
 dependencies[] = emailkit

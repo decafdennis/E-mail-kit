@@ -2,7 +2,7 @@
 name = Statistics
 description = Keeps statistics on how many times a message is viewed or how often a link in a message is clicked. This module is not useful by itself, but instead provides functionality to other modules.
 package = E-mail kit
-version = 6.x-1.x-alpha1
+version = 6.x-1.x-dev
 core = 6.x
 
 dependencies[] = emailkit
