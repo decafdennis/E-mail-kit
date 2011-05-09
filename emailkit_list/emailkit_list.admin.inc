@@ -562,7 +562,7 @@ function emailkit_list_admin_subscriber_import_form(&$form_state) {
   $form['confirm'] = array(
     '#type' => 'checkbox',
     '#title' => t('Mark new subscriptions as confirmed'),
-    '#description' => t('Whether any new subscriptions should be marked as being confirmed at the date of the import. Only check this box if the subscribers have previously confirmed their subscriptions.'),
+    '#description' => t('Whether any new subscriptions should be marked as being confirmed on the date of the import. Only check this box if the subscribers have previously confirmed their subscriptions.'),
   );
   
   $form['submit'] = array(
