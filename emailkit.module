@@ -152,13 +152,13 @@ function emailkit_emailkit_destination_info() {
     '#default_dispatcher' => 'emailkit_default',
   );
   
-  // Internet Message Format (RFC 2822) Address Specification destination type
+  // Internet Message Format (RFC 2822) address specification destination type
   $info['emailkit_imf'] = array(
     '#label' => t('Internet Message Format address specification'),
     '#default_dispatcher' => 'emailkit_default',
   );
   
-  // Single e-mail address destination type
+  // E-mail address destination type
   $info['emailkit_address'] = array(
     '#label' => t('E-mail address'),
     '#exposed' => TRUE,
@@ -182,9 +182,9 @@ function emailkit_emailkit_dispatcher_info() {
     '#file' => 'emailkit.inc',
   );
   
-  // Dispatcher that services textual e-mail addresses, by forwarding them to the default message dispatcher
+  // Dispatcher that services textual e-mail addresses, by parsing them and reformatting them as a generic destination type
   $info['emailkit_address'] = array(
-    '#label' => t('Readdress as a generic e-mail destination'),
+    '#label' => t('Parse and reformat as a generic e-mail destination'),
     '#destinations' => array('emailkit_address'),
     '#file' => 'emailkit.address.inc',
   );
