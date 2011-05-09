@@ -101,3 +101,23 @@ function emailkit_list_schema() {
 
   return $schema;
 }
+
+/**
+ * Implementation of hook_update_N().
+ */
+function emailkit_node_update_6100() {
+  $ret = array();
+  
+  db_add_field($ret, 'emailkit_list', 'description', array(
+    'type' => 'text',
+    'size' => 'medium',
+    'not null' => TRUE,
+  ));
+  
+  db_add_field($ret, 'emailkit_list_subscription', 'confirm_date', array(
+    'type' => 'int',
+    'default' => 0,
+  ));
+  
+  return $ret;
+}
