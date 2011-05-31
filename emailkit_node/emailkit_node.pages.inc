@@ -23,9 +23,18 @@ function emailkit_node_send_form(&$form_state, $node) {
   // Note: we can't call this field 'destination', because it collides with Drupal's drupal_get_destination() stuff
   $form['dest'] = array(
     '#type' => 'emailkit_destination_select',
-    '#title' => t('Destination'),
+    '#title' => t('To'),
     '#required' => TRUE,
-    '#description' => t('Specify the destination to which to send the e-mail.'),
+    '#description' => t('The destination to which to send the e-mail.'),
+  );
+  
+  // Allows the user to override the default message subject, which is the node title
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#description' => t('The subject of the e-mail message.'),
+    '#required' => TRUE,
+    '#default_value' => $node->title,
   );
   
   $form['send'] = array(
@@ -43,6 +52,10 @@ function emailkit_node_send_form_submit($form, &$form_state) {
   // Build the message
   $message = emailkit_message('emailkit_node', $form['#node']);
 
+  if (!empty($form_state['values']['subject'])) {
+    $message['#subject'] = $form_state['values']['subject'];
+  }
+  
   // Send the message
   if (emailkit_destination_select_send($message, $form_state['values']['dest'])) {
     drupal_set_message(t('The message was sent successfully.'));
