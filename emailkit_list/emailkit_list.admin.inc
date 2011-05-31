@@ -578,21 +578,21 @@ function emailkit_list_admin_subscriber_import_form(&$form_state) {
  */
 function emailkit_list_admin_subscriber_import_form_validate($form, &$form_state) {
   if (!empty($form_state['values']['addresses'])) {
+    // Adapted from Drupal 6's valid_email_address()
+    $user = '[a-zA-Z0-9_\-\.\+\^!#\$%&*+\/\=\?\`\|\{\}~\']+';
+    $domain = '(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.?)+';
+    $ipv4 = '[0-9]{1,3}(?:\.[0-9]{1,3}){3}';
+    $ipv6 = '[0-9a-fA-F]{1,4}(?:\:[0-9a-fA-F]{1,4}){7}';
+    $address_pattern = "/\b$user@(?:$domain|(?:\[(?:$ipv4|$ipv6)\]))\b/";
+    
     $addresses_data = $form_state['values']['addresses'];
-    $addresses = preg_split('/[\s,]+/', $addresses_data, NULL, PREG_SPLIT_NO_EMPTY);
+    preg_match_all($address_pattern, $addresses_data, $addresses_matches);
+    $addresses = $addresses_matches[0];
     
     if (empty($addresses)) {
       form_error($form['addresses'], t('The data does not contain any e-mail addresses.'));
     }
     else {
-      foreach ($addresses as $address) {
-        if (!valid_email_address($address)) {
-          form_error($form['addresses'], t('The data contains an invalid e-mail address: %address', array('%address' => $address)));
-        }
-      }
-    }
-
-    if (!form_get_error($form['addresses'])) {
       $form_state['emailkit_list_addresses'] = $addresses;
     }
   }
@@ -652,7 +652,7 @@ function emailkit_list_admin_subscriber_import_form_submit($form, &$form_state) 
   }
   
   if ($success) {
-    drupal_set_message(t('The subscribers have been imported successfully.'));
+    drupal_set_message(t('@count subscribers have been imported.', array('@count' => count($addresses))));
   }
   else {
     drupal_set_message(t('The import process was aborted due to an error.'), 'error');
