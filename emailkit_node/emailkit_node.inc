@@ -9,9 +9,15 @@
  * Implementation of hook_message() for the emailkit_node message.
  */
 function emailkit_node_message($message_id, $node, $preview = FALSE) {
+  global $user;
+  
   return array(
     '#node' => $node, // For later reference
     '#emailkit_statistics' => !$preview, // Enables statistics, if the emailkit_statistics module is enabled
+    '#from' => array(
+      'name' => $user->name,
+      'address' => $user->mail,
+    ),
     '#subject' => $node->title,
     'content' => array(
       'node' => array(

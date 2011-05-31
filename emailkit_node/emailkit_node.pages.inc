@@ -16,6 +16,8 @@ function emailkit_node_send($node) {
  * Returns the form for the send message tab on a node.
  */
 function emailkit_node_send_form(&$form_state, $node) {
+  global $user;
+  
   $form = array(
     '#node' => $node,
   );
@@ -26,6 +28,23 @@ function emailkit_node_send_form(&$form_state, $node) {
     '#title' => t('To'),
     '#required' => TRUE,
     '#description' => t('The destination to which to send the e-mail.'),
+  );
+  
+  // Allows the user to override the default sender name, which is the user's name
+  $form['from_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('From name'),
+    '#description' => t('The name to use for the sender of the e-mail message.'),
+    '#default_value' => $user->name,
+  );
+  
+  // Allows the user to override the default sender e-mail address, which is the user's e-mail address
+  $form['from_address'] = array(
+    '#type' => 'textfield',
+    '#title' => t('From e-mail address'),
+    '#description' => t('The e-mail address to use for the sender of the e-mail message.'),
+    '#required' => TRUE,
+    '#default_value' => $user->mail,
   );
   
   // Allows the user to override the default message subject, which is the node title
@@ -46,15 +65,23 @@ function emailkit_node_send_form(&$form_state, $node) {
 }
 
 /**
+ * Handles validation of the form for the send message tab on a node.
+ */
+function emailkit_node_send_form_validate($form, &$form_state) {
+  if (!empty($form_state['values']['from_address']) && !valid_email_address($form_state['values']['from_address'])) {
+    form_error($form['from_address'], t('From e-mail address field does not contain a valid e-mail address.'));
+  }
+}
+
+/**
  * Handles submission of the form for the send message tab on a node.
  */
 function emailkit_node_send_form_submit($form, &$form_state) {
   // Build the message
   $message = emailkit_message('emailkit_node', $form['#node']);
-
-  if (!empty($form_state['values']['subject'])) {
-    $message['#subject'] = $form_state['values']['subject'];
-  }
+  $message['#from']['name'] = $form_state['values']['from_name'];
+  $message['#from']['address'] = $form_state['values']['from_address'];
+  $message['#subject'] = $form_state['values']['subject'];
   
   // Send the message
   if (emailkit_destination_select_send($message, $form_state['values']['dest'])) {

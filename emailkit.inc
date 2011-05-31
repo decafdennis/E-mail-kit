@@ -15,9 +15,29 @@ define('EMAILKIT_RECIPIENT_TOKEN_PATTERN', '/\[recipient:(.+?)\]|%5Brecipient%3A
  */
 function emailkit_default_dispatcher_send($dispatcher, $message, $destination) {
   // Prepare the headers
-  $headers = array(
-    'Subject' => $message['#subject'],
-  );
+  $headers = array();
+  
+  if (!empty($message['#from'])) {
+    if (is_array($message['#from'])) {
+      $from_name = !empty($message['#from']['name']) ? $message['#from']['name'] : NULL;
+      $from_address = !empty($message['#from']['address']) ? $message['#from']['address'] : NULL;
+      
+      if (!empty($from_name)) {
+        // TODO: Escape the name and/or e-mail address?
+        $headers['From'] = $from_name . ' <' . $from_address . '>';
+      }
+      else {
+        $headers['From'] = $from_address;
+      }
+    }
+    else {
+      $headers['From'] = $message['#from'];
+    }
+  }
+  
+  if (!empty($message['#subject'])) {
+    $headers['Subject'] = $message['#subject'];
+  }
   
   // Render the text and HTML versions of the body
   $text = emailkit_message_render($message, EMAILKIT_MESSAGE_FORMAT_TEXT, $destination);
